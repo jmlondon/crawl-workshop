@@ -4,4 +4,3 @@
 * Amy Van Cise
 * Dov Kacev
 * Huihua Lee
-* Trevor Joyce
