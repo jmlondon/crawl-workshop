@@ -5,3 +5,4 @@
 * Michelle Lander
 * Tonya Zepplin
 * Charlotte Boyd
+* Trevor Joyce
