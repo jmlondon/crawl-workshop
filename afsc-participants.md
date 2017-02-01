@@ -6,3 +6,5 @@
 * Tonya Zepplin
 * Charlotte Boyd
 * Trevor Joyce
+* Tomo Eguchi
+* Stacie Hardy
