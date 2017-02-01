@@ -4,3 +4,4 @@
 * Amy Van Cise
 * Dov Kacev
 * Huihua Lee
+* Alex Curtis
