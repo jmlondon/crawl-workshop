@@ -9,3 +9,4 @@
 * Tomo Eguchi
 * Stacie Hardy
 * Briana Abrahms
+* Carey Kuhn
