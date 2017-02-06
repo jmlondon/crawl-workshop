@@ -1,0 +1,85 @@
+---
+title: "Practical Crawling"
+subtitle: "A guide to fitting models to real data"
+author: "Josh M. London"
+date: "2017/02/05"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+```
+
+---
+class: middle
+
+# Outline
+
+1. Assemble Source Data
+1. Tidy Data for R and `crawl`
+1. Starting Locations
+1. Activity Data (e.g. haul-out)
+1. Speed filter
+
+---
+class: middle
+
+# Outline (cont'd)
+
+1. Model Parameters
+1. Parallel Process Multiple Animals
+1. Try-Catch Error Trapping
+1. Plotting Maps
+1. Helper Package `crawlr`
+1. Utilization Distributions
+
+---
+
+# Assemble Source Data
+
+---
+
+# Tidy Data for R and `crawl`
+
+---
+
+# Starting Locations
+
+---
+
+# Activity Data (e.g. haul-out)
+
+---
+
+# Speed Filter
+
+---
+
+# Model Parameters
+
+---
+
+# Parallel Process Multiple Animals
+
+---
+
+# Try-Catch Error Trapping
+
+---
+
+# Plotting Maps
+
+---
+
+# Helper Package `crawlr`
+
+---
+
+# Utilization Distributions
+
