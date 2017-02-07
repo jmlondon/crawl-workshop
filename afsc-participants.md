@@ -10,3 +10,4 @@
 * Stacie Hardy
 * Briana Abrahms
 * Carey Kuhn
+* Brian Fadely
