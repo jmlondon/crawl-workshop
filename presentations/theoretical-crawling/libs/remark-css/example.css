@@ -14,6 +14,7 @@ a, a > code {
 .footnote {
   position: absolute;
   bottom: 3em;
+  padding-right: 4em;
   font-size: 90%;
 }
 .remark-code, .remark-inline-code { font-family: 'Source Code Pro', 'Lucida Console', Monaco, monospace; }
@@ -21,12 +22,12 @@ a, a > code {
 
 .inverse {
   background-color: #272822;
-  color: #777872;
+  color: #d6d6d6;
   text-shadow: 0 0 20px #333;
 }
 .inverse h1, .inverse h2, .inverse h3 {
   color: #f3f3f3;
-  line-height: 0.8em;
+  line-height: 1.0em;
 }
 /* Two-column layout */
 .left-column {
@@ -56,4 +57,8 @@ a, a > code {
 }
 img {
   max-width: 100%;
+}
+blockquote {
+  border-left: solid 5px lightgray;
+  padding-left: 1em;
 }

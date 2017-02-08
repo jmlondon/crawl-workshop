@@ -1,0 +1,65 @@
+---
+title: "Theoretical Crawling"
+subtitle: "A guide to the mathematics of animal movement"
+author: "Devin S. Johnson"
+date: "2017/02/05"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+library(png)
+library(grid)
+library(crawl)
+```
+
+
+class: middle
+# Outline
+
+.pull-left[
+## Mathematics
+
+1. Discrete-time random walks
+1. Correlated random walks
+1. Brownian motion
+1. Ornstein-Ulenbeck (OU) process
+1. Continuous-time CRW
+1. Stochastic differential equations
+1. Integrated SDEs
+]
+
+.pull-right[
+## Statistics
+
+1. Maximum likelihood inference 
+1. Bayesian inference
+1. State-space models
+1. Kalman filter/smoother (KFS)
+1. Importance sampling
+1. Process imputation
+]
+
+---
+# For more depth ...
+
+```{r echo=FALSE}
+img <- readPNG("Book_Cover_Final.png")
+grid.raster(img)
+```
+
+
+
+---
+# Stochastic differential equations
+
+$$\mu(s) = \int_0^t \nu(u) du$$
+
+
+

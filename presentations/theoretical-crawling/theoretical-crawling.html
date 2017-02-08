@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Theoretical Crawling</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Devin S. Johnson" />
+    <link href="libs/remark-css/example.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Theoretical Crawling
+## A guide to the mathematics of animal movement
+### Devin S. Johnson
+### 2017/02/05
+
+---
+
+
+
+
+
+class: middle
+# Outline
+
+.pull-left[
+## Mathematics
+
+1. Discrete-time random walks
+1. Correlated random walks
+1. Brownian motion
+1. Ornstein-Ulenbeck (OU) process
+1. Continuous-time CRW
+1. Stochastic differential equations
+1. Integrated SDEs
+]
+
+.pull-right[
+## Statistics
+
+1. Maximum likelihood inference 
+1. Bayesian inference
+1. State-space models
+1. Kalman filter/smoother (KFS)
+1. Importance sampling
+1. Process imputation
+]
+
+---
+# For more depth ...
+
+![](theoretical-crawling_files/figure-html/unnamed-chunk-1-1.png)&lt;!-- --&gt;
+
+
+
+---
+# Stochastic differential equations
+
+`$$\mu(s) = \int_0^t \nu(u) du$$`
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('showSlide', function (slide) {setTimeout(function() {window.dispatchEvent(new Event('resize'));}, 100)});</script>
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+  }
+});
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
