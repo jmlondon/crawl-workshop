@@ -36,4 +36,5 @@ Nearest Hotel:
 1. A laptop computer with the following software installed
     1. R 3.3.2
     1. RStudio 1.0.136
+    1. (Windows users) [RTools34](https://cran.r-project.org/bin/windows/Rtools/)
 1. A healthy does of curiosity and patience. This will be the first time teaching this workshop, so it won't be perfect
