@@ -4,6 +4,7 @@
 * Alex Zerbini
 * Michelle Lander
 * Tonya Zepplin
+* Jeremy Stirling
 * Charlotte Boyd
 * Trevor Joyce
 * Tomo Eguchi
