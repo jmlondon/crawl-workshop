@@ -30,3 +30,10 @@ Nearest Hotel:
 
 ### Day 3: 
 1. BYODHF (Bring Your Own Data, Have Fun)
+
+## What To Bring and Have Installed
+
+1. A laptop computer with the following software installed
+    1. R 3.3.2
+    1. RStudio 1.0.136
+1. A healthy does of curiosity and patience. This will be the first time teaching this workshop, so it won't be perfect
