@@ -54,6 +54,7 @@
 \newcommand{\be}{\boldsymbol{\epsilon}}
 \newcommand{\bv}{\boldsymbol{\nu}}
 \newcommand{\bt}{\boldsymbol{\theta}}
+\newcommand{\ba}{\boldsymbol{\alpha}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -692,6 +693,7 @@ boom!
 \ft{MLE details}
 
 \nt{Large sample theory}
+\medskip
 
 If $\bd = (d_1 \dots d_n)$ is `large' then 
 $$\hat\bt \sim N(\bt, -\mathbf{H}_{\bt}^{-1}),$$
@@ -701,6 +703,7 @@ where $\mathbf{H}_{\bt}$ is the Hessian matrix of $\log L(\bt|\bd)$.
 \pause
 
 \nt{Dependent data}
+\medskip
 
 If the data are dependent, then $[\bd|\bt] \ne \prod_i [d_i|\bt]$. 
 \medskip
@@ -719,12 +722,73 @@ $[\bd|\bt] = [d_1|\bt]\times [d_2|d_1,\bt]\times [d_3|d_2,\bt] \times \dots \tim
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 
+\begin{frame}
+\ft{MLE details}
+
+\nt{Missing `data' likelihoods}
+\medskip 
+
+$L(\bt|\bd_{obs}) = [\bd_{obs}|\bt] = \int [\bd_{obs}|\bd_{mis},\bt]\ [\bd_{mis}|\bt] d\bd_{mis}$
+\bigskip
+
+\nt{Penalized likelihood}
+\medskip
+
+Sometimes the likelihood is hard to maximize or parameters are not full identifiable. So, a penalty term is added
+\medskip
+
+$\log L_p(\bt|\bd) = \log L(\bt|\bd) + \kappa J(\bt)$
+\medskip
+
+We'll see some examples laster. But this is how spline regressions are fit (e.g., see {\tt mgcv} package).
+
+\vfill
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
 \ft{Bayesian inference}
+
+Instead of a fixed quantity, $\bt$, is treated like a random variable itself. Before any data is collected, we might model our uncertainty about the value of $\bt$ with the probability distribution $[\bt]$. This is the `prior' distribution.
+\medskip
+
+We already have the data model $[\bd|\bt] = L(\bt|\bd)$
+\medskip
+
+\begin{block}{Bayes rule and posterior distribution}
+
+$$[\bt|\bd] = \frac{L(\bt|\bd)\ [\bt]}{\int [\bd|\bt']\ [\bt'] d\bt'}$$
+Or, we can look at it on the log scale
+$$\log [\bt|\bd] = \log L(\bt|\bd) + \log [\bt] - const.$$
+\end{block}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+\ft{Bayes inference details}
+\nt{How do we work with a posterior distribution?}
+\begin{itemize}
+\item $\hat\theta$ = mean, median or mode
+\item $SE$ of $\hat\bt$ = SD of $[\bt|\bd]$
+\item Interval estimates = $(\hat\bt_l,\hat\bt_u)$ such that $Pr(\hat\bt_l < \bt|\bd < \hat\bt_u) = 0.95$. These are called `credible intervals'
+\end{itemize}
+
+\vfill
+
+\nt{How do we find these for general posteriors?}
+\begin{itemize}
+\item Approximate with a sample $\bt_1,\dots,\bt_m$ from $[\bt|\bd]$ and use sample versions
+\item Numerically (including Monte Carlo) approximate integrals necessary
+\item Approximate with known distribution that is similar
+\end{itemize}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 
 {
 \setbeamercolor{background canvas}{bg=dark-gray}
@@ -737,6 +801,47 @@ $[\bd|\bt] = [d_1|\bt]\times [d_2|d_1,\bt]\times [d_3|d_2,\bt] \times \dots \tim
 
 \begin{frame}
 \ft{State-space models}
+
+\nt{Notation}
+\begin{itemize}
+\item $\bs_1,\dots,\bs_n$ are observed locations
+\item $\tau_1,\dots,\tau_n$ are the observation times
+\item $\bmu_\tau$ is the continuous path of the animal at time $\tau$
+\item $\bv_\tau$ is the velocity at time $\tau$
+\item $\ba_\tau = (\mu_{\tau,x}, \nu_{\tau,x}, \mu_{\tau,y}, \nu_{\tau,y})$,
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+\ft{State-space models}
+
+\begin{block}{CTCRW model}
+$$
+\begin{aligned}
+\bs_i &= \mathbf{z}'\ba_{\tau_i} + \be_i\\
+\ba_{\tau_{i+1}} &= \mathbf{T}_i \ba_{\tau_i} + \boldsymbol{\eta}_i
+\end{aligned}
+$$
+\begin{itemize}
+\item $[\be_i] = N(\mathbf{0}, \mathbf{V}_i)$; $\mathbf{V}_i$ is the location error variance.
+\item $\mathbf{z} = (1,0,1,0)$
+\item $\mathbf{T}_i$ is a function of $\beta$ and $\delta_i = \tau_{i+1}-\tau_i$
+\item $[\boldsymbol{\eta}_i] = N(\mathbf{0}, \mathbf{Q}_i)$
+\item $\mathbf{Q}_i$ depends only on $\beta$, $\delta_i$, and $\sigma$
+\end{itemize}
+
+\end{block}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+\ft{Temporally dynamic CTCRW}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%
