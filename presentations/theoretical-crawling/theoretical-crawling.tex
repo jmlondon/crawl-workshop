@@ -1,4 +1,5 @@
-\documentclass[36pt]{beamer}
+%\documentclass[36pt]{beamer}
+\documentclass[36pt,handout]{beamer}
 \usepackage{amsmath, epsfig, xspace, color}
 \usepackage{algorithm,algorithmic}
 \usepackage[normal,tight,center]{subfigure}
@@ -144,7 +145,7 @@ February 14--16, 2017}\\
 	\item Bayesian inference
 	\item State-space models
 	\item Kalman filter/smoother (KFS)
-	\item Importance sampling
+	\item Practical Bayesian inference
 	\item Process imputation
   \end{enumerate}
   
@@ -842,41 +843,163 @@ $$
 \begin{frame}
 \ft{Temporally dynamic CTCRW}
 
+The parameters do not have to remain constant over time!
+\begin{itemize}
+\item $\tau_1^*,\dots, \tau_m^*$ are known times where $\beta$ and $\sigma$ {\em can} change
+\item Define model as before based on merged observation and changepoint times, $\tau_1,\dots,\tau_{n+m}$
+\end{itemize}
+
+\begin{block}{Temporally dynamic movement model}
+$$
+\begin{aligned}
+&\bs_i = \left\{\begin{array}{ll} \mathbf{z}'\ba_{\tau_i} + \be_i & \mbox{for } \tau_i \mbox{ an observed time} \\
+\mbox{NA } & \mbox{for } \tau_i \mbox{ in } \tau_1^*,\dots,\tau_m^* \end{array} \right. \\
+&\ba_{\tau_{i+1}} = \mathbf{T}_i \ba_{\tau_i} + \boldsymbol{\eta}_i
+\end{aligned}
+$$
+\end{block}
+
+Movement model is still continuous in time! 
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-\ft{Kalman filter / smoother (KFS)}
+\ft{Kalman filter}
+Method to calculate likelihood, {\em NOT} a model!
+\medskip
+
+\begin{block}{Likelihood for state-space models}
+$$
+\begin{aligned}
+&L(\bt|\bs_{1:n}) = \prod_i[\bs_{i+1}|\bs_{1:i},\bt] \\
+&= \int [\bs_1|\ba_{\tau_1},\theta]\ [\ba_{\tau_1}|\bt]\dots [\ba_{\tau_i}|\ba_{\tau_{i-1}},\bt] \times \dots\\
+&\qquad\qquad \times [\bs_{n}|\ba_{\tau_{n+m}},\theta]\ [\ba_{\tau_{n+m}}|\ba_{\tau_{n+m-1}},\bt] d\ba_{1:n+m}
+\end{aligned}
+$$
+\end{block}
+\medskip
+
+\nt{Kalman filter} is a numerical algorithm that allows calculation of $L(\bt|\bs_1,\dots,\bs_n)$ in an efficient manner. 
+\begin{itemize}
+\item moves forward through the complete likelihood integrating on the way
+\item requires linear form and normal errors 
+\end{itemize} 
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+\ft{Kalman smoother}
+
+Obtain predictions from model fit
+\begin{itemize}
+\item optimal predictor $\hat\ba_i = E[\ba_i|\bs_{1:n},\bt]$
+\item prediction errors $\widehat{\mbox{var}}(\hat\ba_i) = Var[\ba_i|\bs_{1:n},\bt]$
+\end{itemize}
+\bigskip\bigskip
+
+\nt{Kalman smoother} is an algorithm to calculate mean and variance of $[\ba_i|\bs_{1:n}, \bt]$
+\begin{itemize}
+\item uses output from Kalman filter to go backwards through the model/data to calculate these quantities
+\item $\ba_i|\bs_{1:n},\bt$ is normally distributed. 
+\end{itemize}
+
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-\ft{Importance sampling}
+\ft{Practical Bayesian inference}
+
+\nt{Posterior }
+
+$$
+\begin{aligned}[]
+[\bt,\ba|\bs] &\propto [\bs|\ba,\bt]\ [\ba|\bt]\ [\bt] \\
+%&= [\ba|\bs,\bt]\ [\bs|\bt]\ [\bt] \\
+&\propto [\ba|\bs,\bt]\ [\bt|\bs]
+\end{aligned}
+$$
+
+\nt{Approach}
+\begin{enumerate}
+\bigsp
+\item Approximate $[\bt|\bs]$ with something easy to sample from, say $[\bt|\bs]^*$
+\item Draw $\bt^{(i)} \sim [\bt|\bs]^*$ then draw $\ba^{(i)} \sim [\ba|\bt^{(i)}, \bs]$\\
+($[\ba|\bt^{(i)}, \bs]$ easy to sample from using KFS algorithms)
+\item $(\bt^{(1)},\ba^{(1)}),\dots,(\bt^{(K)},\ba^{(K)})$ is a posterior sample
+\item $m_i = f(\bt^{(i)},\ba^{(i)})$ will be a sample from $[m|\bs]$
+\end{enumerate}
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
-\ft{Process inputation}
+\ft{Approximating $[\bt|\bs]$}
+\begin{itemize}
+\bigsp
+\item Normal approximation
+	\begin{enumerate}
+	\item maximize $\log[\bs|\bt] + \log[\bt] = L_p(\bt|\bs)$ (penalized likelihood)
+	\item $[\bt|\bs]^* = N\left(\hat\bt, -\mathbf{H}_{\hat\bt}^{-1}\right)$ (possibly truncated)
+	\end{enumerate}
+\item Importance sampling (exact sample)
+	\begin{enumerate}
+	\item sample $\tilde\bt^{(k)}\sim q(\bt)$ (maybe normal from last item)
+	\item form weights $w_k = [\tilde\bt^{(k)}|\bs]/q(\tilde\bt^{(k)})$
+	\item sample $\bt^{(i)}$ from $\tilde\bt^{(1)},\dots,\tilde\bt^{(K)}$ with prob. $\propto w_1,\dots,w_K$
+	\end{enumerate}
+\item Deterministic sample (INLA)
+	\begin{enumerate}
+	\item sample $\tilde\bt^{(k)}$ from deterministic grid
+	\item form weights $w_k = [\tilde\bt^{(k)}|\bs]$
+	\item sample $\bt^{(i)}$ from $\tilde\bt^{(1)},\dots,\tilde\bt^{(K)}$ with prob. $\propto w_1,\dots,w_K$
+	\end{enumerate}
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+\ft{Process imputation}
+
+Allows us to account for location uncertainty in other analysis of movement data
+
+Assume we know $\bmu_\tau$ on a sufficiently fine time scale 
+
+Analysis desired $\mathbf{y} = \mathbf{f}(\bmu)$
+
+
+
+
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 
+\begin{frame}
+\ft{Process imputation}
 
+\end{frame}
 
-
-
-
-
-
-%\begin{frame}
-%\frametitle{Questions?}
+%%%%%%%%%%%%%%%%%%%%%%%%
+{
+\usebackgroundtemplate{\includegraphics[width=\paperwidth]{ssl_sleep.png}}
+\setbeamercolor{frametitle}{fg=noaaturq}
+\begin{frame}[t]
+\frametitle{That's all the math folks!}
+Anyone awake?
+\vspace*{\fill}
 %\begin{center}
-%\includegraphics[width=0.85\textwidth]{nfs_pup_questions.png}
+%\includegraphics[width=\textwidth]{nfs_pup_questions.png}
 %\end{center}
-%\end{frame}
+\end{frame}
+}
 
 
 
