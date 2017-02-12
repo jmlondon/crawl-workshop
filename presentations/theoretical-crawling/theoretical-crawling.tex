@@ -1,16 +1,19 @@
 %\documentclass[36pt]{beamer}
 \documentclass[36pt,handout]{beamer}
+
 \usepackage{amsmath, epsfig, xspace, color}
 \usepackage{algorithm,algorithmic}
 \usepackage[normal,tight,center]{subfigure}
+
+% For overlaying text
+\usepackage[absolute, overlay]{textpos}
+% ref-- http://mirrors.ibiblio.org/CTAN/macros/latex/contrib/textpos/textpos.pdf
+
 \setlength{\subfigcapskip}{-.5em}
 
 %%%
 % PRELIMINARY FORMATTING
 %%%
-%\usepackage[scaled]{helvet} % With " scaled " option
-%\usepackage{eulervm}
-%\renewcommand\sfdefault{phv}
 
 \usepackage{color}
 \definecolor{noaaturq}{RGB}{0,147,208}  
@@ -43,7 +46,9 @@
 %%%
 \newcommand{\ft}[1]{\frametitle{#1}}
 \newcommand{\nt}[1]{\textcolor{noaaturq}{#1}}
-\newcommand{\bigsp}{\itemsep=1.5\baselineskip}
+\newcommand{\bigsep}{\itemsep=1.5\baselineskip}
+\newcommand{\medsep}{\itemsep=1.25\baselineskip}
+\newcommand{\smsep}{\itemsep=1.1\baselineskip}
 
 \newcommand{\bM}{\mathbf{M}}
 \newcommand{\bb}{\mathbf{b}}
@@ -73,7 +78,7 @@
 \frame{
 \centering
 \vspace*{1cm}
-{\huge \textcolor{noaaturq}{Theoretical Crawling}} \medskip 
+{\Huge \textcolor{noaaturq}{Theoretical Crawling}} \medskip 
 
 {\Large A guide to the mathematics and statistics\\ of animal movement}
 \bigskip\bigskip
@@ -272,8 +277,8 @@ $$
 
 \begin{itemize}
 \item Weighted mean of last location and point of attraction
-\item If $\mathbf{M} \equiv \rho\mathbf{I}$ and $|\rho|<1$ then as $t \to \infty$ $$[\bmu_t] = N\left(\bar\bmu, \frac{1}{1-\rho^2}\boldsymbol{\Sigma}\right)$$
-\item What happens if $\rho \to 1$?
+\item If $\mathbf{M} \equiv \gamma\mathbf{I}$ and $|\gamma|<1$ then as $t \to \infty$ $$[\bmu_t] = N\left(\bar\bmu, \frac{1}{1-\gamma^2}\boldsymbol{\Sigma}\right)$$
+\item What happens if $\gamma \to 1$?
 \end{itemize}
 
 \end{frame}
@@ -406,6 +411,13 @@ So, $\mbox{corr}(d\bmu_t, d\bmu_s) = e^{-\beta|t-s|}$
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+dtcrw demo
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%
+
 {
 \setbeamercolor{background canvas}{bg=dark-gray}
 \begin{frame}
@@ -473,7 +485,7 @@ BM example
 \ft{Brownian motion}
 \begin{block}{Properties}
 \begin{itemize}
-\bigsp
+\bigsep
 \item $\mbox{Mean}[\bb_\tau] = \mathbf{0}$
 \item $\mbox{Var}[\bb_\tau] =  \tau \mathbf{I}$
 \item Independent increments ...\\
@@ -581,7 +593,7 @@ Some useful properties:
 \medskip
 
 \begin{itemize}
-\bigsp
+\bigsep
 \item $\bv_{\tau+\delta} = \bv_\tau e^{-\beta\delta} + \boldsymbol{\zeta}_{\tau+\delta}$, 
 \item $\bmu_{\tau+\delta} = \bmu_\tau + \bv_\tau\left(\frac{1-e^{-\beta\delta}}{\beta}\right) + \boldsymbol{\xi}_{\tau+\delta}$
 \item $\be_{\tau+\delta} = (\boldsymbol{\zeta}_{\tau+\delta}, \boldsymbol{\xi}_{\tau+\delta})$ are zero mean independent (through time) normal errors that depend only on $\delta$, $\beta$, and $\sigma$ ({\bf Not} $\tau$!) 
@@ -599,7 +611,7 @@ Some more properties:
 \medskip
 
 \begin{itemize}
-\bigsp
+\bigsep
 \item $\mbox{corr}[\bv_{\tau+\delta},\bv_\tau] = e^{-\beta\delta}$,\\
 $\approx 0$ for $\beta$ large\\
 $\approx 1$ for $\beta$ small
@@ -926,7 +938,7 @@ $$
 
 \nt{Approach}
 \begin{enumerate}
-\bigsp
+\bigsep
 \item Approximate $[\bt|\bs]$ with something easy to sample from, say $[\bt|\bs]^*$
 \item Draw $\bt^{(i)} \sim [\bt|\bs]^*$ then draw $\ba^{(i)} \sim [\ba|\bt^{(i)}, \bs]$\\
 ($[\ba|\bt^{(i)}, \bs]$ easy to sample from using KFS algorithms)
@@ -941,7 +953,7 @@ $$
 \begin{frame}
 \ft{Approximating $[\bt|\bs]$}
 \begin{itemize}
-\bigsp
+\bigsep
 \item Normal approximation
 	\begin{enumerate}
 	\item maximize $\log[\bs|\bt] + \log[\bt] = L_p(\bt|\bs)$ (penalized likelihood)
@@ -968,22 +980,51 @@ $$
 
 \begin{frame}
 \ft{Process imputation}
-
-Allows us to account for location uncertainty in other analysis of movement data
-
-Assume we know $\bmu_\tau$ on a sufficiently fine time scale 
-
-Analysis desired $\mathbf{y} = \mathbf{f}(\bmu)$
-
-
-
-
+\begin{itemize}
+\smsep
+\item Allows us to account for location uncertainty in other analysis of movement data
+\item Assume we know $\bmu_\tau$ on a sufficiently fine time scale \medskip
+\item Response variable of interest $\mathbf{y} = \mathbf{f}(\bmu)$, e.g., 
+	\begin{itemize}
+	\item Distance traveled, 
+	\item Utilization distribution, or
+	\item locations of dives
+	\end{itemize}
+\item Model of interest $[\mathbf{y}|\boldsymbol{\psi}]$, e.g., 
+	\begin{itemize}
+	\item ANOVA,
+	\item Spatial regression model, or
+	\item Point process model
+	\end{itemize}
+\item But,... we don't observe $\bmu_\tau$
+\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
 \ft{Process imputation}
+\nt{Solution} Average over unknown `true' paths
+$$
+[\boldsymbol{\psi}|\bs] = \int [\mathbf{y}_{\bmu}|\boldsymbol{\psi}]\ [\boldsymbol{\psi}]\ [\bmu|\bs] d\bmu
+$$
+
+Method
+\begin{enumerate}
+\item Simulate $\bmu^{(i)} \sim [\bmu|\bs]$ $\to$ Calculate $\mathbf{y}^{(i)}$
+\item Calculate summaries of $[\boldsymbol{\psi}^{(i)}|\mathbf{y}^{(i)}]$
+	\begin{itemize}
+	\item posterior mean 
+	\item posterior predictions
+	\item UDs
+	\item MCMC sample
+	\end{itemize}
+\item Summarize over $\bmu^{(i)}$ realizations
+	\begin{itemize}
+	\item $E[\boldsymbol{\psi}|\bs] = mean(E[\boldsymbol{\psi}|\bs])$
+	\item $Var[\boldsymbol{\psi}|\bs] =  Var(E[\boldsymbol{\psi}|\bs]) + mean(Var[\boldsymbol{\psi}|\mathbf{y}])$
+	\end{itemize}
+\end{enumerate}
 
 \end{frame}
 
@@ -994,10 +1035,6 @@ Analysis desired $\mathbf{y} = \mathbf{f}(\bmu)$
 \begin{frame}[t]
 \frametitle{That's all the math folks!}
 Anyone awake?
-\vspace*{\fill}
-%\begin{center}
-%\includegraphics[width=\textwidth]{nfs_pup_questions.png}
-%\end{center}
 \end{frame}
 }
 
