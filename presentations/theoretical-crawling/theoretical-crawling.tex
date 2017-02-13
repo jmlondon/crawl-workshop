@@ -104,28 +104,6 @@ February 14--16, 2017}\\
 }
 
 
-%%%%%%%%%%%%%% 1
-
-%\begin{frame}
-%\frametitle{Coauthors}
-%\begin{columns}
-%\column{0.5\textwidth}
-%%\includegraphics[width=\textwidth]{Hooten_lynx.pdf}
-%
-%\textcolor{noaaturq}{\large Author One} \\ USGS \\ Colorado State University
-%\vfill
-%\column{0.5\textwidth}
-%\vfill
-%\noindent \textcolor{noaaturq}{\large Author Two} \\
-%NMFS\\
-%National Marine Mammal Lab \bigskip
-%
-%%\includegraphics[width=0.85\textwidth]{InsidePhoto_kuhn.pdf}
-%
-%\end{columns}
-%\end{frame}
-
-
 %%%%%%%%%%%%%%%%%%% 2
 
 \begin{frame}
@@ -142,6 +120,8 @@ February 14--16, 2017}\\
 	  \item Integrated SDEs
 	  \item Continuous-time CRW
   \end{enumerate}
+  
+  \pause
   
   \column{0.5\textwidth}
   {\Large Statistics}
@@ -214,8 +194,11 @@ Telemetry data are thought of as predominately {\it spatial}
 	\item We want to know something about {\it space} use
 	\item We want to know which spatial locations are selected over others
 \end{itemize}
-  
-Most mathematical models and statistical analysis view telemetry data as {\it time series} processes where a realization occurs in geographical space \medskip
+
+\pause
+Most mathematical models and statistical analysis view telemetry data as {\it time series} processes where a realization occurs in geographical space \medskip 
+
+\pause
 
 {\Large \textcolor{noaaturq}{Notation (discrete time)}}
 \begin{itemize}
@@ -239,6 +222,8 @@ $$[\be_t] = N(0,\boldsymbol{\Sigma})$$
 \item Typically $\boldsymbol{\Sigma} \equiv \sigma^2\mathbf{I}$, so, $\mu_{x,t}$ is independent of $\mu_{y,t}$
 \end{itemize}
 \medskip
+
+\pause
 
 \textcolor{noaaturq}{\Large An unconditional view}
 
@@ -271,19 +256,25 @@ $$
 Let's suppose that an animal would like to stay close to some focal point, say $\bar\bmu$. 
 \bigskip
 
-\textcolor{noaaturq}{\Large VAR(1) model}
+\pause
 
+\begin{block}{\Large VAR(1) model}
 $$
-\begin{aligned} \bmu_t &= \bar\bmu + \mathbf{M}(\bmu_{t-1}-\bar\bmu) + \epsilon_t \\ 
-&= (\mathbf{I}-\mathbf{M})\bar\bmu + \mathbf{M}\bmu_{t-1} + \epsilon_t 
+\begin{aligned} \bmu_t &= \bar\bmu + \mathbf{M}(\bmu_{t-1}-\bar\bmu) + \be_t \\ 
+&= (\mathbf{I}-\mathbf{M})\bar\bmu + \mathbf{M}\bmu_{t-1} + \be_t 
 \end{aligned}
 $$
 
 \begin{itemize}
 \item Weighted mean of last location and point of attraction
 \item If $\mathbf{M} \equiv \gamma\mathbf{I}$ and $|\gamma|<1$ then as $t \to \infty$ $$[\bmu_t] = N\left(\bar\bmu, \frac{1}{1-\gamma^2}\boldsymbol{\Sigma}\right)$$
+
+\pause 
+
 \item What happens if $\gamma \to 1$?
 \end{itemize}
+
+\end{block}
 
 \end{frame}
 
@@ -304,11 +295,14 @@ $$
 \ft{Modeling velocity}
 
 \begin{itemize}
-\item Rule 1. velocity $\ne$ speed!
+\item Rule 1. velocity $\ne$ speed! 
+\pause
 \item We are thinking of velocity in the physics sense. Speed is the magnitude of velocity. 
 $$\mbox{velocity = derivative of location process}$$
 \end{itemize}
 \bigskip
+
+\pause
 
 What does that mean for our random walk models in discrete-time? 
 
@@ -331,8 +325,12 @@ $$d\bmu_t = \mathbf{M}d\bmu_{t-1} + \be_t$$
 Now, the movement steps are {\em correlated} compared to a simple random walk. 
 \medskip
 
+\pause
+
 We might call this model  a {\em correlated random walk}
 \medskip
+
+\pause
 
 \textcolor{noaaturq}{\Large Why CRW?}
 \begin{itemize}
@@ -348,6 +346,9 @@ We might call this model  a {\em correlated random walk}
 \ft{Correlated random walk}
 
 If we model $d\bmu_t = \mathbf{M}\ d\bmu_{t-1} + \be_t$, what does this mean for  $\bmu_t$?
+\medskip
+
+\pause
 
 Recall we can always write the position process like this:
 $$
@@ -382,6 +383,8 @@ $$
 Current location is a weighted sum of previous {\em two} locations
 \medskip
 
+\pause
+
 \textcolor{noaaturq}{\large The $\mathbf{M}$ matrix}
 
 Turning angle specification
@@ -407,6 +410,8 @@ $$\mathbf{M} = \gamma \mathbf{I}$$
 
 Then $\mbox{corr}(d\bmu_t, d\bmu_s) = \gamma^{|t-s|}$
 \bigskip
+
+\pause
 
 But let's reparameterize $\gamma = e^{-\beta}$, then 
 \begin{itemize}
@@ -443,7 +448,11 @@ So, $\mbox{corr}(d\bmu_t, d\bmu_s) = e^{-\beta|t-s|}$
 \ft{Brownian motion}
 Forms the basis of all continuous-time models\medskip
 
+\pause
+
 Random walk in continuous-time \medskip
+
+\pause
 
 So, let's start from the beginning...
 $$
@@ -453,6 +462,9 @@ $$
 &= \bb_0 + \sum_{j=1}^{t} d\bb_j
 \end{aligned}
 $$
+
+\pause 
+
 Recall,
 
 $[d\bb_j] = N(\mathbf{0},\sigma^2\mathbf{I})$ and $d\bb_j$ is indep. of $d\bb_i$
@@ -467,6 +479,8 @@ $[d\bb_j] = N(\mathbf{0},\sigma^2\mathbf{I})$ and $d\bb_j$ is indep. of $d\bb_i$
 \ft{Brownian motion}
 We can get to continuous-time by making the time gaps, $\delta = \tau_j-\tau_{j-1}$, smaller and smaller
 
+\pause
+
 \begin{block}{Definition}
 $$
 \begin{aligned}
@@ -475,6 +489,8 @@ $$
 \end{aligned}
 $$
 \end{block}
+
+\pause
 
 \begin{itemize}
 \item $d\bb_\tau$ is infinitely rough
@@ -551,10 +567,14 @@ $$
 d\bmu_\tau = g(\bmu_\tau)dt + h(\bmu_\tau)d\bb_\tau
 $$
 
+\pause
+
 Solution (assume $h\equiv\sigma$)
 $$
 \bmu_\tau = \bmu_0 + \int_0^\tau g(\bmu_u)du + \sigma\bb_\tau
 $$
+
+\pause
 
 For OU model
 $$
@@ -574,6 +594,8 @@ New notation:
 \item $H(\bmu_\tau)$ = potential function to control movement
 \item $\nabla H(\cdot)$ = spatial gradient of $H$
 \end{itemize}
+
+\pause
 
 \begin{block}{Movement ISDE}
 $$
@@ -603,6 +625,7 @@ $$
 \end{aligned}
 $$
 \end{block}
+
 \begin{itemize}
 \item $\bv_\tau$ is an Ornstein-Uhlenbeck (continuous-time AR(1)) process
 \item $H\equiv 0$
@@ -622,7 +645,9 @@ Some useful properties:
 \bigsep
 \item $\bv_{\tau+\delta} = \bv_\tau e^{-\beta\delta} + \boldsymbol{\zeta}_{\tau+\delta}$, 
 \item $\bmu_{\tau+\delta} = \bmu_\tau + \bv_\tau\left(\frac{1-e^{-\beta\delta}}{\beta}\right) + \boldsymbol{\xi}_{\tau+\delta}$
+\pause
 \item $\be_{\tau+\delta} = (\boldsymbol{\zeta}_{\tau+\delta}, \boldsymbol{\xi}_{\tau+\delta})$ are zero mean independent (through time) normal errors that depend only on $\delta$, $\beta$, and $\sigma$ ({\bf Not} $\tau$!) 
+\pause
 \item Can we write $\bmu_{\tau+\delta}$ just as a function of $\bmu_\tau$? \medskip \\
 {\bf No}. Distribution of $\bmu_\tau$ is a function of the whole $\bmu_u$, $u<\tau$.
 \end{itemize}
@@ -652,8 +677,10 @@ Some more properties:
 \item $\mbox{corr}[\bv_{\tau+\delta},\bv_\tau] = e^{-\beta\delta}$,\\
 $\approx 0$ for $\beta$ large\\
 $\approx 1$ for $\beta$ small
+\pause
 \item $\bmu_\tau \to$ Brownian motion as $\beta$ becomes large\\
 $\bmu_\tau$ becomes very smooth as $\beta$ becomes small
+\pause
 \item $\bv_{\tau+\delta}$ roughly indep. of $\bv_\tau$ at time gap $\delta = 3/\beta$, so, ...\medskip \\
 $\bmu_\tau,\ \bmu_{\tau+3/\beta},\ \bmu_{\tau+6/\beta},\dots$ not really distinguishable from Brownian motion
 \end{itemize}
@@ -666,6 +693,8 @@ $\bmu_\tau,\ \bmu_{\tau+3/\beta},\ \bmu_{\tau+6/\beta},\dots$ not really disting
 \ft{Continuous-time CRWs}
 What about $H(x,y) \ne 0$? The future?
 \medskip
+
+\pause
 
 \begin{block}{Numerical solution to general ISDE model}
 for small $\delta$
@@ -683,6 +712,8 @@ $
 $
 \end{block}
 \medskip
+
+\pause
 
 Notice that $\bv_\tau$ process disappears and there is a spatial component, $\nabla H(\bmu_\tau)$! Something missing from the standard CTCRW model.
 
@@ -779,7 +810,9 @@ $[\bd|\bt] = [d_1|\bt]\times [d_2|d_1,\bt]\times [d_3|d_2,\bt] \times \dots \tim
 \medskip 
 
 $L(\bt|\bd_{obs}) = [\bd_{obs}|\bt] = \int [\bd_{obs}|\bd_{mis},\bt]\ [\bd_{mis}|\bt] d\bd_{mis}$
-\bigskip
+\bigskip\bigskip
+
+\pause
 
 \nt{Penalized likelihood}
 \medskip
@@ -803,8 +836,12 @@ We'll see some examples laster. But this is how spline regressions are fit (e.g.
 Instead of a fixed quantity, $\bt$, is treated like a random variable itself. Before any data is collected, we might model our uncertainty about the value of $\bt$ with the probability distribution $[\bt]$. This is the `prior' distribution.
 \medskip
 
+\pause
+
 We already have the data model $[\bd|\bt] = L(\bt|\bd)$
 \medskip
+
+\pause
 
 \begin{block}{Bayes rule and posterior distribution}
 
@@ -825,6 +862,8 @@ $$\log [\bt|\bd] = \log L(\bt|\bd) + \log [\bt] - const.$$
 \item $SE$ of $\hat\bt$ = SD of $[\bt|\bd]$
 \item Interval estimates = $(\hat\bt_l,\hat\bt_u)$ such that $Pr(\hat\bt_l < \bt|\bd < \hat\bt_u) = 0.95$. These are called `credible intervals'
 \end{itemize}
+
+\pause
 
 \vfill
 
@@ -898,6 +937,8 @@ The parameters do not have to remain constant over time!
 \item Define model as before based on merged observation and changepoint times, $\tau_1,\dots,\tau_{n+m}$
 \end{itemize}
 
+\pause
+
 \begin{block}{Temporally dynamic movement model}
 $$
 \begin{aligned}
@@ -930,6 +971,8 @@ $$
 \end{block}
 \medskip
 
+\pause
+
 \nt{Kalman filter} is a numerical algorithm that allows calculation of $L(\bt|\bs_1,\dots,\bs_n)$ in an efficient manner. 
 \begin{itemize}
 \item moves forward through the complete likelihood integrating on the way
@@ -948,6 +991,8 @@ Obtain predictions from model fit
 \item prediction errors $\widehat{\mbox{var}}(\hat\ba_i) = Var[\ba_i|\bs_{1:n},\bt]$
 \end{itemize}
 \bigskip\bigskip
+
+\pause
 
 \nt{Kalman smoother} is an algorithm to calculate mean and variance of $[\ba_i|\bs_{1:n}, \bt]$
 \begin{itemize}
@@ -973,6 +1018,8 @@ $$
 \end{aligned}
 $$
 
+\pause
+
 \nt{Approach}
 \begin{enumerate}
 \bigsep
@@ -996,12 +1043,14 @@ $$
 	\item maximize $\log[\bs|\bt] + \log[\bt] = L_p(\bt|\bs)$ (penalized likelihood)
 	\item $[\bt|\bs]^* = N\left(\hat\bt, -\mathbf{H}_{\hat\bt}^{-1}\right)$ (possibly truncated)
 	\end{enumerate}
+	\pause
 \item Importance sampling (exact sample)
 	\begin{enumerate}
 	\item sample $\tilde\bt^{(k)}\sim q(\bt)$ (maybe normal from last item)
 	\item form weights $w_k = [\tilde\bt^{(k)}|\bs]/q(\tilde\bt^{(k)})$
 	\item sample $\bt^{(i)}$ from $\tilde\bt^{(1)},\dots,\tilde\bt^{(K)}$ with prob. $\propto w_1,\dots,w_K$
 	\end{enumerate}
+	\pause
 \item Deterministic sample (INLA)
 	\begin{enumerate}
 	\item sample $\tilde\bt^{(k)}$ from deterministic grid
@@ -1045,8 +1094,11 @@ $$
 $$
 [\boldsymbol{\psi}|\bs] = \int [\mathbf{y}_{\bmu}|\boldsymbol{\psi}]\ [\boldsymbol{\psi}]\ [\bmu|\bs] d\bmu
 $$
+\vfill 
 
-Method
+\pause
+
+\nt{Method}
 \begin{enumerate}
 \item Simulate $\bmu^{(i)} \sim [\bmu|\bs]$ $\to$ Calculate $\mathbf{y}^{(i)}$
 \item Calculate summaries of $[\boldsymbol{\psi}^{(i)}|\mathbf{y}^{(i)}]$
