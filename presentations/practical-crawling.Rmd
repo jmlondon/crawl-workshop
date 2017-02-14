@@ -21,33 +21,309 @@ class: middle
 
 # Outline
 
-.pull-left[
-1. Assemble Source Data
-1. Tidy Data for R and `crawl`
-1. Starting Locations
-1. Activity Data (e.g. haul-out)
-1. Speed filter
-]
+- Assemble Source Data
+- Intro to the Tidyverse
+- Tidy Data for Telemetry
+- Starting Locations
+- Activity Data (e.g. haul-out)
+- Speed filter
 
-.pull-right[
-6. Model Parameters
-6. Parallel Process Multiple Animals
-6. Try-Catch Error Trapping
-6. Plotting Maps
-6. Helper Package `crawlr`
-6. Utilization Distributions
-]
+---
+class: middle
+# Outline
+
+- Model Parameters
+- Parallel Process Multiple Animals
+- Try-Catch Error Trapping
+- Plotting Maps
+- Helper Package `crawlr`
+- Utilization Distributions
 ---
 
 # Assemble Source Data
 
+## Start with the rawest form of source data
+
+* Comma/Tab-separated files (Argos CDs)
+* Tag Manufacturer Source Data
+* Movebank or other Data Repositories
+
+## R has a variety of packages for ingesting all of these data types
+
+* `read.csv()`, `readr::read_csv()`
+* `wcUtils` package for Wildlife Computers Data Portal
+* `move` package for Movebank.org, other http, API, and rest service functions
+
 ---
 
-# Tidy Data for R and `crawl`
+## Script Everything
+
+### Develop everything within R scripts  
+(or R Markdown files)
+
+`load_data.R`,  
+`tidy_data.R`,  
+`model_data.R`,  
+`plot_data.R`
+
+### Key Principles
+
+1. Each script can always be sourced in full
+2. Each step in your process is reproducible
+3. Create output files that are the input of the next step
 
 ---
 
+# Tidy Data for Telemetry
+
+### Tidy Data:
+
+1. Each variable forms a column.
+2. Each observation forms a row.
+3. Each type of observational unit forms a table.
+
+Philosophy and Collection of Packages from Hadley Wickham
+
+### Additional Resources:
+
+1. https://cran.r-project.org/pub/R/web/packages/tidyr/vignettes/tidy-data.html
+2. https://blog.rstudio.org/2016/09/15/tidyverse-1-0-0/
+3. https://www.jstatsoft.org/article/view/v059i10/v59i10.pdf
+
+---
+class: middle
+
+## Telemetry Data is Messy
+
+---
+class: middle
+
+## Column headers are often values, not variable names.
+
+For example, behavior data from telemetry (e.g. dive bins and histograms).
+
+---
+class: middle
+
+## Date-Time Columns are Separated
+
+The Space-Time Continuum Does Not Allow for the Separation of Date & Time
+
+---
+class: middle
+
+## Date-Time Formats are Variable
+
+### Make Your Life Easy and Adopt ISO8601
+
+- `2017-02-13 16:02:07+00:00`  
+- `2017-02-13 16:02:07Z`  
+- `20170213 160207Z`  
+
+### Or, Explicitly Convert Your Date Columns to POSIXct in R
+
+(the `lubridate` package is your friend)
+
+---
+
+## Messy Data Example
+
+### Timeline Percent Dry Data
+
+1. Multiple Hourly Percent-Dry Observations per Row
+2. Column Headers Contain Values (e.g. Bin1, Bin2, ...)
+3. Non Standard Date-Time Format (`%H:%M:%S %d-%b-%Y`)
+
+---
+
+## Messy Data Example
+
+### Timeline Percent Dry Data
+
+```{r, read-histo-csv, warning=FALSE, message=FALSE, echo = FALSE}
+library(tidyverse)
+library(lubridate)
+
+histo_data <- readr::read_csv('assets/143949-Histos.csv')
+histo_data %>% select(1:39) %>% slice(1:8)
+```
+
+---
+
+## Tidying Data Example
+
+```{r, tidy-histo-csv, warning=FALSE, message = FALSE}
+## Convert Column Names to Lower Case for Easier Coding
+colnames(histo_data) <- tolower(colnames(histo_data))
+
+## Specify Our Date Format and Convert to POSIX w/ lubridate
+date_format <- "%H:%M:%S %d-%b-%Y"
+histo_data <- histo_data %>% 
+  dplyr::mutate(date = lubridate::parse_date_time(date,date_format))
+
+## Create a tbl_df that Relates Bin Columns to Day Hours
+bins <- tibble(bin=paste("bin",1:24,sep=""),hour=0:23)
+
+## Chain Together Multiple Commands to Create Our Tidy Dataset
+tidy_histo <- histo_data %>% 
+  dplyr::filter(histtype %in% 
+                  c('Percent','1Percent')) %>%
+  tidyr::gather(bin,percent_dry, starts_with('bin')) %>%
+  dplyr::left_join(bins,by="bin") %>%
+  dplyr::mutate(datadatetime = date + lubridate::hours(hour)) %>%
+  dplyr::select(deployid,datadatetime,percent_dry) %>%
+  dplyr::arrange(deployid,datadatetime)
+```
+
+---
+
+## Tidy'd Data Output
+
+```{r, tidy-histo-output}
+tidy_histo
+```
+
+---
+
+## A Package for Tidying Wildlife Computers Data
+
+### `wcUtils`
+
+https://github.com/jmlondon/wcUtils
+
+Under heavy development, but provides some helper functionality for Wildlife Computers tag data
+
+```{r, tidy-histo, warning=FALSE, message=FALSE, echo = TRUE, eval = FALSE}
+library(wcUtils)
+histo_data <- wcUtils::read_histos('assets/143949-Histos.csv')
+histo_data <- wcUtils::tidyTimelines(histo_data)
+```
+
+---
+class: middle
+
+## Brief Introduction to `dplyr`
+
+The `dplyr` package is a collection of functions meant to help you manipulate
+your data and perform summary functions.
+
+`dplyr` also incorporates use of the `magrittr` package which introduces pipes
+in the form of the `%>%` command.
+
+---
+
+## Brief Introduction to `dplyr`
+
+```{r, dplyr-examples, message = FALSE, warning = FALSE}
+
+library(nycflights13)
+head(flights)
+
+```
+
+---
+
+## Introduction to `dplyr` Cont'd
+
+### `dplyr` verbs
+
+- `filter()` (and `slice()`)
+- `arrange()`
+- `select()` (and `rename()`)
+- `distinct()`
+- `mutate()` (and `transmute()`)
+- `summarise()`
+- `sample_n()` (and `sample_frac()`)
+
+---
+## `filter()`
+
+
+```{r}
+flights %>% filter(., month == 1, day == 1)
+```
+
+---
+
+##  `select()`
+
+```{r}
+flights %>% select(.,year, month, day)
+```
+
+---
+
+## `mutate()`
+
+```{r}
+flights %>% mutate(.,
+  gain = arr_delay - dep_delay,
+  speed = distance / air_time * 60)
+```
+---
+class: middle
+
+## Hands On Live Demonstration
+
+1. PTT 160941 - Harbor Seal from the Aleutian Islands
+1. Raw Data File: `examples/data/160941-Locations.csv`
+1. Template R Script: `examples/scripts/160941-ReadData.csv`
+
+---
 # Starting Locations
+
+- starting values are important to getting a good model fit
+- in most cases, release date-time and release coordinates are known
+- first step is to merge that information with our imported location data
+
+```{r, echo = FALSE}
+path_to_file <- "examples/data/160941-Locations.csv"
+my_cols <- cols(
+  DeployID = col_character(),
+  Ptt = col_integer(),
+  Instr = col_character(),
+  Date = col_datetime("%H:%M:%S %d-%b-%Y"),
+  Type = col_character(),
+  Quality = col_character(),
+  Latitude = col_double(),
+  Longitude = col_double(),
+  `Error radius` = col_integer(),
+  `Error Semi-major axis` = col_integer(),
+  `Error Semi-minor axis` = col_integer(),
+  `Error Ellipse orientation` = col_integer(),
+  Offset = col_character(),
+  `Offset orientation` = col_character(),
+  `GPE MSD` = col_character(),
+  `GPE U` = col_character(),
+  Count = col_character(),
+  Comment = col_character()
+)
+
+tbl160941 <- readr::read_csv(path_to_file,col_types = my_cols)
+colnames(tbl160941) <- tolower(colnames(tbl160941))
+
+```
+
+```{r}
+release_data <- readr::read_csv("examples/data/deploy_data.csv") %>% 
+  dplyr::rename(deployid = splash_deployid, 
+                date = release_dt,
+                latitude = release_lat,
+                longitude = release_long) %>% 
+  dplyr::mutate(`error radius` = 50L,
+                `error semi-major axis` = 50L,
+                `error semi-minor axis` = 50L,
+                `error ellipse orientation` = 0L,
+                quality = "3", instr = 'GPS') %>% 
+  dplyr::select(deployid,date,latitude,longitude,
+                `error radius`,`error semi-major axis`,
+                `error semi-minor axis`, `error ellipse orientation`,
+                quality,instr)
+
+tbl160941 <- bind_rows(tbl160941,release_data) %>% 
+  arrange(deployid,date)
+
+```
 
 ---
 
@@ -60,10 +336,6 @@ class: middle
 ---
 
 # Model Parameters
-
----
-
-# Parallel Process Multiple Animals
 
 ---
 

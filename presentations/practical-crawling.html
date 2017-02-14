@@ -25,32 +25,364 @@ class: middle
 
 # Outline
 
-.pull-left[
-1. Assemble Source Data
-1. Tidy Data for R and `crawl`
-1. Starting Locations
-1. Activity Data (e.g. haul-out)
-1. Speed filter
-]
+- Assemble Source Data
+- Intro to the Tidyverse
+- Tidy Data for Telemetry
+- Starting Locations
+- Activity Data (e.g. haul-out)
+- Speed filter
 
-.pull-right[
-6. Model Parameters
-6. Parallel Process Multiple Animals
-6. Try-Catch Error Trapping
-6. Plotting Maps
-6. Helper Package `crawlr`
-6. Utilization Distributions
-]
+---
+class: middle
+# Outline
+
+- Model Parameters
+- Parallel Process Multiple Animals
+- Try-Catch Error Trapping
+- Plotting Maps
+- Helper Package `crawlr`
+- Utilization Distributions
 ---
 
 # Assemble Source Data
 
+## Start with the rawest form of source data
+
+* Comma/Tab-separated files (Argos CDs)
+* Tag Manufacturer Source Data
+* Movebank or other Data Repositories
+
+## R has a variety of packages for ingesting all of these data types
+
+* `read.csv()`, `readr::read_csv()`
+* `wcUtils` package for Wildlife Computers Data Portal
+* `move` package for Movebank.org, other http, API, and rest service functions
+
 ---
 
-# Tidy Data for R and `crawl`
+## Script Everything
+
+### Develop everything within R scripts  
+(or R Markdown files)
+
+`load_data.R`,  
+`tidy_data.R`,  
+`model_data.R`,  
+`plot_data.R`
+
+### Key Principles
+
+1. Each script can always be sourced in full
+2. Each step in your process is reproducible
+3. Create output files that are the input of the next step
 
 ---
 
+# Tidy Data for Telemetry
+
+### Tidy Data:
+
+1. Each variable forms a column.
+2. Each observation forms a row.
+3. Each type of observational unit forms a table.
+
+Philosophy and Collection of Packages from Hadley Wickham
+
+### Additional Resources:
+
+1. https://cran.r-project.org/pub/R/web/packages/tidyr/vignettes/tidy-data.html
+2. https://blog.rstudio.org/2016/09/15/tidyverse-1-0-0/
+3. https://www.jstatsoft.org/article/view/v059i10/v59i10.pdf
+
+---
+class: middle
+
+## Telemetry Data is Messy
+
+---
+class: middle
+
+## Column headers are often values, not variable names.
+
+For example, behavior data from telemetry (e.g. dive bins and histograms).
+
+---
+class: middle
+
+## Date-Time Columns are Separated
+
+The Space-Time Continuum Does Not Allow for the Separation of Date &amp; Time
+
+---
+class: middle
+
+## Date-Time Formats are Variable
+
+### Make Your Life Easy and Adopt ISO8601
+
+- `2017-02-13 16:02:07+00:00`  
+- `2017-02-13 16:02:07Z`  
+- `20170213 160207Z`  
+
+### Or, Explicitly Convert Your Date Columns to POSIXct in R
+
+(the `lubridate` package is your friend)
+
+---
+
+## Messy Data Example
+
+### Timeline Percent Dry Data
+
+1. Multiple Hourly Percent-Dry Observations per Row
+2. Column Headers Contain Values (e.g. Bin1, Bin2, ...)
+3. Non Standard Date-Time Format (`%H:%M:%S %d-%b-%Y`)
+
+---
+
+## Messy Data Example
+
+### Timeline Percent Dry Data
+
+
+```
+## # A tibble: 8 × 39
+##              DeployID    Ptt DepthSensor       Source Instr HistType
+##                 &lt;chr&gt;  &lt;int&gt;       &lt;dbl&gt;        &lt;chr&gt; &lt;chr&gt;    &lt;chr&gt;
+## 1 PV2016_3033_14U0350 143949         0.5 Transmission    UT  Percent
+## 2 PV2016_3033_14U0350 143949         0.5 Transmission    UT  Percent
+## 3 PV2016_3033_14U0350 143949         0.5 Transmission    UT  Percent
+## 4 PV2016_3033_14U0350 143949         0.5 Transmission    UT  Percent
+## 5 PV2016_3033_14U0350 143949         0.5 Transmission    UT  Percent
+## 6 PV2016_3033_14U0350 143949         0.5 Transmission    UT  Percent
+## 7 PV2016_3033_14U0350 143949         0.5 Transmission    UT  Percent
+## 8 PV2016_3033_14U0350 143949         0.5 Transmission    UT  Percent
+## # ... with 33 more variables: Date &lt;chr&gt;, `Time Offset` &lt;dbl&gt;,
+## #   Count &lt;int&gt;, BadTherm &lt;chr&gt;, LocationQuality &lt;chr&gt;, Latitude &lt;chr&gt;,
+## #   Longitude &lt;chr&gt;, NumBins &lt;int&gt;, Sum &lt;chr&gt;, Bin1 &lt;int&gt;, Bin2 &lt;int&gt;,
+## #   Bin3 &lt;int&gt;, Bin4 &lt;int&gt;, Bin5 &lt;int&gt;, Bin6 &lt;int&gt;, Bin7 &lt;int&gt;,
+## #   Bin8 &lt;int&gt;, Bin9 &lt;int&gt;, Bin10 &lt;int&gt;, Bin11 &lt;int&gt;, Bin12 &lt;int&gt;,
+## #   Bin13 &lt;int&gt;, Bin14 &lt;int&gt;, Bin15 &lt;int&gt;, Bin16 &lt;int&gt;, Bin17 &lt;int&gt;,
+## #   Bin18 &lt;int&gt;, Bin19 &lt;int&gt;, Bin20 &lt;int&gt;, Bin21 &lt;int&gt;, Bin22 &lt;int&gt;,
+## #   Bin23 &lt;int&gt;, Bin24 &lt;int&gt;
+```
+
+---
+
+## Tidying Data Example
+
+
+```r
+## Convert Column Names to Lower Case for Easier Coding
+colnames(histo_data) &lt;- tolower(colnames(histo_data))
+
+## Specify Our Date Format and Convert to POSIX w/ lubridate
+date_format &lt;- "%H:%M:%S %d-%b-%Y"
+histo_data &lt;- histo_data %&gt;% 
+  dplyr::mutate(date = lubridate::parse_date_time(date,date_format))
+
+## Create a tbl_df that Relates Bin Columns to Day Hours
+bins &lt;- tibble(bin=paste("bin",1:24,sep=""),hour=0:23)
+
+## Chain Together Multiple Commands to Create Our Tidy Dataset
+tidy_histo &lt;- histo_data %&gt;% 
+  dplyr::filter(histtype %in% 
+                  c('Percent','1Percent')) %&gt;%
+  tidyr::gather(bin,percent_dry, starts_with('bin')) %&gt;%
+  dplyr::left_join(bins,by="bin") %&gt;%
+  dplyr::mutate(datadatetime = date + lubridate::hours(hour)) %&gt;%
+  dplyr::select(deployid,datadatetime,percent_dry) %&gt;%
+  dplyr::arrange(deployid,datadatetime)
+```
+
+---
+
+## Tidy'd Data Output
+
+
+```r
+tidy_histo
+```
+
+```
+## # A tibble: 5,040 × 3
+##               deployid        datadatetime percent_dry
+##                  &lt;chr&gt;              &lt;dttm&gt;       &lt;chr&gt;
+## 1  PV2016_3033_14U0350 2016-09-30 02:00:00        &lt;NA&gt;
+## 2  PV2016_3033_14U0350 2016-09-30 03:00:00        &lt;NA&gt;
+## 3  PV2016_3033_14U0350 2016-09-30 04:00:00          98
+## 4  PV2016_3033_14U0350 2016-09-30 05:00:00         100
+## 5  PV2016_3033_14U0350 2016-09-30 06:00:00         100
+## 6  PV2016_3033_14U0350 2016-09-30 07:00:00          40
+## 7  PV2016_3033_14U0350 2016-09-30 08:00:00          10
+## 8  PV2016_3033_14U0350 2016-09-30 09:00:00           3
+## 9  PV2016_3033_14U0350 2016-09-30 10:00:00           3
+## 10 PV2016_3033_14U0350 2016-09-30 11:00:00           0
+## # ... with 5,030 more rows
+```
+
+---
+
+## A Package for Tidying Wildlife Computers Data
+
+### `wcUtils`
+
+https://github.com/jmlondon/wcUtils
+
+Under heavy development, but provides some helper functionality for Wildlife Computers tag data
+
+
+```r
+library(wcUtils)
+histo_data &lt;- wcUtils::read_histos('assets/143949-Histos.csv')
+histo_data &lt;- wcUtils::tidyTimelines(histo_data)
+```
+
+---
+## Brief Introduction to `dplyr`
+
+The `dplyr` package is a collection of functions meant to help you manipulate
+your data and perform summary functions.
+
+`dplyr` also incorporates use of the `magrittr` package which introduces pipes
+in the form of the `%&gt;%` command.
+
+---
+
+## Brief Introduction to `dplyr`
+
+### example
+
+
+```r
+library(nycflights13)
+head(flights)
+```
+
+```
+## # A tibble: 6 × 19
+##    year month   day dep_time sched_dep_time dep_delay arr_time
+##   &lt;int&gt; &lt;int&gt; &lt;int&gt;    &lt;int&gt;          &lt;int&gt;     &lt;dbl&gt;    &lt;int&gt;
+## 1  2013     1     1      517            515         2      830
+## 2  2013     1     1      533            529         4      850
+## 3  2013     1     1      542            540         2      923
+## 4  2013     1     1      544            545        -1     1004
+## 5  2013     1     1      554            600        -6      812
+## 6  2013     1     1      554            558        -4      740
+## # ... with 12 more variables: sched_arr_time &lt;int&gt;, arr_delay &lt;dbl&gt;,
+## #   carrier &lt;chr&gt;, flight &lt;int&gt;, tailnum &lt;chr&gt;, origin &lt;chr&gt;, dest &lt;chr&gt;,
+## #   air_time &lt;dbl&gt;, distance &lt;dbl&gt;, hour &lt;dbl&gt;, minute &lt;dbl&gt;,
+## #   time_hour &lt;dttm&gt;
+```
+
+---
+
+## Introduction to `dplyr` Cont'd
+
+### `dplyr` verbs
+
+- `filter()` (and `slice()`)
+- `arrange()`
+- `select()` (and `rename()`)
+- `distinct()`
+- `mutate()` (and `transmute()`)
+- `summarise()`
+- `sample_n()` (and `sample_frac()`)
+
+---
+## `filter()`
+
+
+
+```r
+flights %&gt;% filter(., month == 1, day == 1)
+```
+
+```
+## # A tibble: 842 × 19
+##     year month   day dep_time sched_dep_time dep_delay arr_time
+##    &lt;int&gt; &lt;int&gt; &lt;int&gt;    &lt;int&gt;          &lt;int&gt;     &lt;dbl&gt;    &lt;int&gt;
+## 1   2013     1     1      517            515         2      830
+## 2   2013     1     1      533            529         4      850
+## 3   2013     1     1      542            540         2      923
+## 4   2013     1     1      544            545        -1     1004
+## 5   2013     1     1      554            600        -6      812
+## 6   2013     1     1      554            558        -4      740
+## 7   2013     1     1      555            600        -5      913
+## 8   2013     1     1      557            600        -3      709
+## 9   2013     1     1      557            600        -3      838
+## 10  2013     1     1      558            600        -2      753
+## # ... with 832 more rows, and 12 more variables: sched_arr_time &lt;int&gt;,
+## #   arr_delay &lt;dbl&gt;, carrier &lt;chr&gt;, flight &lt;int&gt;, tailnum &lt;chr&gt;,
+## #   origin &lt;chr&gt;, dest &lt;chr&gt;, air_time &lt;dbl&gt;, distance &lt;dbl&gt;, hour &lt;dbl&gt;,
+## #   minute &lt;dbl&gt;, time_hour &lt;dttm&gt;
+```
+
+---
+
+##  `select()`
+
+
+```r
+flights %&gt;% select(.,year, month, day)
+```
+
+```
+## # A tibble: 336,776 × 3
+##     year month   day
+##    &lt;int&gt; &lt;int&gt; &lt;int&gt;
+## 1   2013     1     1
+## 2   2013     1     1
+## 3   2013     1     1
+## 4   2013     1     1
+## 5   2013     1     1
+## 6   2013     1     1
+## 7   2013     1     1
+## 8   2013     1     1
+## 9   2013     1     1
+## 10  2013     1     1
+## # ... with 336,766 more rows
+```
+
+---
+
+## `mutate()`
+
+
+```r
+flights %&gt;% mutate(.,
+  gain = arr_delay - dep_delay,
+  speed = distance / air_time * 60)
+```
+
+```
+## # A tibble: 336,776 × 21
+##     year month   day dep_time sched_dep_time dep_delay arr_time
+##    &lt;int&gt; &lt;int&gt; &lt;int&gt;    &lt;int&gt;          &lt;int&gt;     &lt;dbl&gt;    &lt;int&gt;
+## 1   2013     1     1      517            515         2      830
+## 2   2013     1     1      533            529         4      850
+## 3   2013     1     1      542            540         2      923
+## 4   2013     1     1      544            545        -1     1004
+## 5   2013     1     1      554            600        -6      812
+## 6   2013     1     1      554            558        -4      740
+## 7   2013     1     1      555            600        -5      913
+## 8   2013     1     1      557            600        -3      709
+## 9   2013     1     1      557            600        -3      838
+## 10  2013     1     1      558            600        -2      753
+## # ... with 336,766 more rows, and 14 more variables: sched_arr_time &lt;int&gt;,
+## #   arr_delay &lt;dbl&gt;, carrier &lt;chr&gt;, flight &lt;int&gt;, tailnum &lt;chr&gt;,
+## #   origin &lt;chr&gt;, dest &lt;chr&gt;, air_time &lt;dbl&gt;, distance &lt;dbl&gt;, hour &lt;dbl&gt;,
+## #   minute &lt;dbl&gt;, time_hour &lt;dttm&gt;, gain &lt;dbl&gt;, speed &lt;dbl&gt;
+```
+---
+
+## Hands On Live Demonstration
+
+1. PTT 160941 - Harbor Seal from the Aleutian Islands
+1. Raw Data File: `examples/data/160941-Locations.csv`
+1. Template R Script: `examples/scripts/160941-ReadData.csv`
+
+---
 # Starting Locations
 
 ---

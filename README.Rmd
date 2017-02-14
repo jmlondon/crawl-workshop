@@ -64,6 +64,7 @@ library(devtools)
 devtools::install_github("NMML/crawl",ref = "devel")
 devtools::install_github("jmlondon/nPacMaps")
 devtools::install_github("jmlondon/crawlr")
+devtools::install_github("jmlondon/wcUtils", ref = "develop")
 
 pkgs <- c(
   "tidyverse",
