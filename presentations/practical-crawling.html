@@ -239,6 +239,8 @@ histo_data &lt;- wcUtils::tidyTimelines(histo_data)
 ```
 
 ---
+class: middle
+
 ## Brief Introduction to `dplyr`
 
 The `dplyr` package is a collection of functions meant to help you manipulate
@@ -250,8 +252,6 @@ in the form of the `%&gt;%` command.
 ---
 
 ## Brief Introduction to `dplyr`
-
-### example
 
 
 ```r
@@ -375,6 +375,7 @@ flights %&gt;% mutate(.,
 ## #   minute &lt;dbl&gt;, time_hour &lt;dttm&gt;, gain &lt;dbl&gt;, speed &lt;dbl&gt;
 ```
 ---
+class: middle
 
 ## Hands On Live Demonstration
 
@@ -384,6 +385,10 @@ flights %&gt;% mutate(.,
 
 ---
 # Starting Locations
+
+- starting values are important to getting a good model fit
+- in most cases, release date-time and release coordinates are known
+- first step is to merge that information with our imported location data
 
 ---
 
@@ -396,10 +401,6 @@ flights %&gt;% mutate(.,
 ---
 
 # Model Parameters
-
----
-
-# Parallel Process Multiple Animals
 
 ---
 
