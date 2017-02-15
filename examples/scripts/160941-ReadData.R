@@ -63,7 +63,8 @@ colnames(tbl160941_locs) <- gsub("-", "_", colnames(tbl160941_locs))
 colnames(tbl160941_locs) <- tolower(colnames(tbl160941_locs))
 
 tbl160941_locs <- tbl160941_locs %>% 
-  rename(date_time = date)
+  rename(date_time = date) %>% 
+  arrange(deployid, date_time)
 
 
 ## the last bit of information we need to read in is haul-out activity.
@@ -201,7 +202,7 @@ tbl160941_histos <- tbl160941_histos %>%
   tidyr::gather(bin,percent_dry, starts_with('bin')) %>%
   dplyr::left_join(bins, by="bin") %>%
   dplyr::rename(date_hour = date) %>% 
-  dplyr::mutate(date_hour = date_hour + lubridate::hours(hour)) %>%
+  dplyr::mutate(date_hour = date_hour + lubridate::hours(hour)) %>% 
   dplyr::select(deployid,date_hour,percent_dry) %>%
   dplyr::arrange(deployid,date_hour)
 
@@ -221,15 +222,19 @@ t <- tibble(date_hour = seq(from = lubridate::floor_date(min_date,'hour'),
                                 by = '1 hour')
 )
 
-library(zoo)
+# install.packages('zoo')
+# library(zoo)
 
 tbl160941_histos <- tbl160941_histos %>% 
   right_join(t, by = "date_hour") %>% 
   mutate(percent_dry = ifelse(is.na(percent_dry), 33,
-                                   percent_dry)) %>% 
-  zoo::na.locf() %>% 
-  mutate(date_hour = lubridate::ymd_hms(date_hour),
-         percent_dry = as.numeric(percent_dry))
+                                   percent_dry),
+         deployid = ifelse(is.na(deployid),"PV2016_3024_15A0909",
+                           deployid)) 
+  # %>% 
+  # zoo::na.locf() %>% 
+  # mutate(date_hour = lubridate::ymd_hms(date_hour),
+  #        percent_dry = as.numeric(percent_dry))
 
 head(tbl160941_histos)
 tail(tbl160941_histos)
@@ -238,5 +243,5 @@ tail(tbl160941_histos)
 ## The final step is to save these two tables to a files. We will use the
 ## `saveRDS` function
 
-saveRDS(tbl160941_locs,'path to save location.rds')
-saveRDS(tbl160941_histos,'path to save location.rds')
+saveRDS(tbl160941_locs,'tbl160941_locs.rds')
+saveRDS(tbl160941_histos,'tbl160941_histos.rds')

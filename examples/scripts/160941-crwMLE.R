@@ -5,14 +5,15 @@ library(tidyverse)
 library(lubridate)
 library(crawl)
 
-crawl_input <- readRDS('path to input_tbl.rds')
+crawl_input <- readRDS('input_tbl.rds')
 
 obsData <- crawl_input %>% 
   dplyr::mutate(percent_dry = 1 - percent_dry/100) %>%
   dplyr::rename(activity = percent_dry,
                 date_time = date_time) %>%
-  # dplyr::filter(error_semimajor_axis <= 70000) %>% 
   dplyr::arrange(deployid, date_hour, date_time)
+
+obsData <- obsData[!duplicated(obsData$date_time),]
 
 diag_data = model.matrix(
   ~ error_semi_major_axis + error_semi_minor_axis +
@@ -33,6 +34,7 @@ init = list(a = c(obsData$x[1], 0,
                        10^2, 10^2)))
 
 fixPar = c(1,1,NA,NA,0)
+
 constr = list(lower = c(-Inf, -4), upper = (c(Inf, 4)))
 
 ln_prior = function(par){dnorm(par[2], 4, 4, log=TRUE)}
@@ -55,11 +57,11 @@ fit <- crawl::crwMLE(
   Time.name = "date_time",
   initial.state = init,
   fixPar = fixPar,
-  prior = lap_prior,
+  # prior = lap_prior,
   constr = constr,
   attempts = 1,
   control = list(maxit = 30, trace = 0,REPORT = 1),
-  initialSANN = list(maxit = 1800, 
+  initialSANN = list(maxit = 1000, 
                      trace = 1, REPORT = 1)
 )
 
@@ -69,8 +71,6 @@ if (inherits(fit,"try-error") || any(is.nan(fit$se))) {
   fixPar = c(1, 1, NA, 4, 0)
   
   obsData <- obsData %>% 
-    dplyr::filter(
-      (error.corr < 0.99 & error.corr > -0.99) | is.na(error.corr)) %>% 
     dplyr::arrange(speno, date_hour, date_time)
   
   fit <- crawl::crwMLE(

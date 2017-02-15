@@ -12,8 +12,8 @@ library(tidyverse)
 library(lubridate)
 library(argosfilter)
 
-tbl160941_locs <- readRDS('path to tbl160941_locs.rds')
-tbl160941_histos <- readRDS('path to tbl160941_histos.rds')
+tbl160941_locs <- readRDS('tbl160941_locs.rds')
+tbl160941_histos <- readRDS('tbl160941_histos.rds')
 
 str(tbl160941_locs)
 str(tbl160941_histos)
@@ -23,6 +23,7 @@ str(tbl160941_histos)
 # match with the corresponding hour record from the *_histos table.
 # 
 # We will use the `left_join()` function from `dplyr` for this
+tbl160941_locs %>% nrow()
 
 tbl160941_locs$filtered <- argosfilter::sdafilter(
   lat = tbl160941_locs$latitude,
@@ -32,12 +33,32 @@ tbl160941_locs$filtered <- argosfilter::sdafilter(
   vmax = 5)
 
 tbl160941_locs <- tbl160941_locs %>%
-  dplyr::filter(filtered == "not") %>% 
-  select(-filtered)
+  dplyr::filter(filtered %in% c("not", "end location")) %>% 
+  dplyr::select(-filtered)
+
+tbl160941_locs %>% nrow()
 
 tbl160941_locs <- tbl160941_locs %>% 
   mutate(date_hour = lubridate::floor_date(date_time,'hour')) %>% 
   arrange(date_time)
+
+## observations with duplicate time values but differing coordinates
+## are not uncommon in Argos data. For example:
+
+tbl160941_locs %>% 
+  slice(550:555) %>% 
+  select(date_time,latitude,longitude)
+
+## the `xts` pakcage has a `make.time.unique()` function that we can use
+## to bump any duplicate times by 1 second.
+
+library(xts)
+
+unique_times <- xts::make.time.unique(tbl160941_locs$date_time, 
+                                      eps=1)
+unique_times[550:555]
+
+tbl160941_locs$date_time <- unique_times
 
 ## convert to sp object and project to appropriate projection
 ## 
@@ -76,9 +97,9 @@ release_data <- readr::read_csv("examples/data/deploy_data.csv") %>%
                 date_time = release_dt,
                 latitude = release_lat,
                 longitude = release_long) %>% 
-  dplyr::mutate(error_radius = 50L,
-                error_semi_major_axis = 50L,
-                error_semi_minor_axis = 50L,
+  dplyr::mutate(error_radius = 25L,
+                error_semi_major_axis = 25L,
+                error_semi_minor_axis = 25L,
                 error_ellipse_orientation = 0L,
                 date_hour = lubridate::floor_date(date_time,'hour'),
                 quality = "3", instr = 'GPS', percent_dry = 0) %>% 
@@ -103,11 +124,9 @@ input_tbl <- tbl160941_histos %>%
                         lubridate::floor_date(min(date_time,na.rm=TRUE),'hour'),
                         max(date_time,na.rm=TRUE))) %>% 
   dplyr::bind_rows(release_data) %>% 
+  dplyr::mutate(date_time = ifelse(is.na(date_time),date_hour,date_time)) %>% 
   dplyr::arrange(deployid,date_time)
 
 head(input_tbl)
 
-
-
-
-saveRDS(input_tbl,'path to input_tbl.rds')
+saveRDS(input_tbl,'input_tbl.rds')
