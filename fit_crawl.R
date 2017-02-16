@@ -22,7 +22,6 @@ fit_crawl <- function(d) {
   }
   
   fit <- crawl::crwMLE(
-    #crawl::displayPar(
     mov.model =  ~ 1,
     err.model = list(
       x =  ~ ln.sd.x - 1,
@@ -33,7 +32,7 @@ fit_crawl <- function(d) {
     Time.name = "date_time",
     initial.state = init,
     fixPar = fixPar,
-    #prior = ln_prior,
+    prior = NULL,
     constr = constr,
     attempts = 1,
     control = list(
@@ -47,5 +46,96 @@ fit_crawl <- function(d) {
       REPORT = 1
     )
   )
+  
+  if(!any(is.nan(fit$se))) {
+    return(fit)
+  }
+  
+  fit <- crawl::crwMLE(
+    mov.model =  ~ 1,
+    err.model = list(
+      x =  ~ ln.sd.x - 1,
+      y =  ~ ln.sd.y - 1,
+      rho =  ~ error.corr
+    ),
+    data = d,
+    Time.name = "date_time",
+    initial.state = init,
+    fixPar = fixPar,
+    prior = ln_prior,
+    constr = constr,
+    attempts = 1,
+    control = list(
+      maxit = 30,
+      trace = 0,
+      REPORT = 1
+    ),
+    initialSANN = list(
+      maxit = 1000,
+      trace = 1,
+      REPORT = 1
+    )
+  )
+  
+  if(!any(is.nan(fit$se))) {
+    return(fit)
+  }
+  
+  fit <- crawl::crwMLE(
+    mov.model =  ~ 1,
+    err.model = list(
+      x =  ~ ln.sd.x - 1,
+      y =  ~ ln.sd.y - 1,
+      rho =  ~ error.corr
+    ),
+    data = d,
+    Time.name = "date_time",
+    initial.state = init,
+    fixPar = fixPar,
+    prior = lap_prior,
+    constr = constr,
+    attempts = 1,
+    control = list(
+      maxit = 30,
+      trace = 0,
+      REPORT = 1
+    ),
+    initialSANN = list(
+      maxit = 1000,
+      trace = 1,
+      REPORT = 1
+    )
+  )
+  
+  if(!any(is.nan(fit$se))) {
+    return(fit)
+  }
+  
+  fit <- crawl::crwMLE(
+    mov.model =  ~ 1,
+    err.model = list(
+      x =  ~ ln.sd.x - 1,
+      y =  ~ ln.sd.y - 1,
+      rho =  ~ error.corr
+    ),
+    data = d,
+    Time.name = "date_time",
+    initial.state = init,
+    fixPar = fixPar,
+    prior = reg_prior,
+    constr = constr,
+    attempts = 1,
+    control = list(
+      maxit = 30,
+      trace = 0,
+      REPORT = 1
+    ),
+    initialSANN = list(
+      maxit = 1000,
+      trace = 1,
+      REPORT = 1
+    )
+  )
+  message("all priors tried")
   fit
 }

@@ -49,7 +49,33 @@ file_paths %>%
   purrr::map(~ dplyr::rename(.x, 
                       date_time = date)) %>% 
   purrr::map(~ dplyr::arrange(.x, 
-                       deployid, date_time)) -> 
+                       deployid, date_time)) %>% 
+  purrr::map(~ dplyr::filter(.x,
+                       !(is.na(error_radius) & type=='Argos'))) %>% 
+  purrr::map(~ dplyr::mutate(.x,
+                       error_semi_major_axis = ifelse(
+                         type=='FastGPS',50,
+                         error_semi_major_axis),
+                       error_semi_minor_axis = ifelse(
+                         type=='FastGPS',50,
+                         error_semi_minor_axis),
+                       error_ellipse_orientation = ifelse(
+                         type=='FastGPS',0,
+                         error_ellipse_orientation)
+                       )
+                       ) %>% 
+  purrr::map(~ dplyr::mutate(.x,
+                             error_semi_major_axis = ifelse(
+                               type=='User',100,
+                               error_semi_major_axis),
+                             error_semi_minor_axis = ifelse(
+                               type=='User',100,
+                               error_semi_minor_axis),
+                             error_ellipse_orientation = ifelse(
+                               type=='User',0,
+                               error_ellipse_orientation)
+  )
+  ) -> 
   my_data
 
 for (i in 1:length(my_data)) {
@@ -87,5 +113,6 @@ input_tbls <- map2(my_data,diag_data,
 source('fit_crawl.R')
 
 fits <- pmap(list(input_tbls),fit_crawl)
-
 names(fits) <- c("seal160941","seal164831")
+
+predicts <- pmap(list(fits),crwPredict())
