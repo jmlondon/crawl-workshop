@@ -56,6 +56,7 @@ library(xts)
 
 unique_times <- xts::make.time.unique(tbl160941_locs$date_time, 
                                       eps=1)
+sum(duplicated(unique_times))
 unique_times[550:555]
 
 tbl160941_locs$date_time <- unique_times

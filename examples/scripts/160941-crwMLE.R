@@ -39,7 +39,7 @@ constr = list(lower = c(-Inf, -4), upper = (c(Inf, 4)))
 
 ln_prior = function(par){dnorm(par[2], 4, 4, log=TRUE)}
 
-lap_prior = function(par){-abs(par[2] - 4)/1000}
+lap_prior = function(par){-abs(par[2] - 4)/5}
 reg_prior = function(par){dt(par[2] - 3,
                              df = 1,
                              log = TRUE)}
@@ -57,7 +57,7 @@ fit <- crawl::crwMLE(
   Time.name = "date_time",
   initial.state = init,
   fixPar = fixPar,
-  # prior = lap_prior,
+  #prior = ln_prior,
   constr = constr,
   attempts = 1,
   control = list(maxit = 30, trace = 0,REPORT = 1),
@@ -71,7 +71,7 @@ if (inherits(fit,"try-error") || any(is.nan(fit$se))) {
   fixPar = c(1, 1, NA, 4, 0)
   
   obsData <- obsData %>% 
-    dplyr::arrange(speno, date_hour, date_time)
+    dplyr::arrange(deployid, date_hour, date_time)
   
   fit <- crawl::crwMLE(
     #crawl::displayPar(
@@ -92,3 +92,5 @@ if (inherits(fit,"try-error") || any(is.nan(fit$se))) {
                        trace = 1, REPORT = 1)
   )
 }
+
+saveRDS(fit,'fit.rds')

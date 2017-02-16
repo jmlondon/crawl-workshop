@@ -10,7 +10,7 @@
 
 library(tidyverse)
 library(lubridate)
-
+%>% %>% %>% 
 ## Read data into R using the `readr` package's read_csv() function
 ## 
 
