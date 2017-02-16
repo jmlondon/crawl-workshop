@@ -144,7 +144,7 @@ bering_plot <- ggplot() +
   geom_polygon(data = ud_fortify,
                aes(x = long, y = lat, 
                    group = id, fill = log_counts)) +
-  coord_equal(xlim=xlims, ylim=ylims) +
+  coord_equal(xlim = xlims, ylim=ylims) +
   scale_fill_viridis() +
   xlab("easting (km)") + ylab("northing (km)") +
   scale_x_continuous(labels = nPacMaps::to_km()) +
