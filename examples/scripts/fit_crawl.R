@@ -136,6 +136,35 @@ fit_crawl <- function(d) {
       REPORT = 1
     )
   )
-  message("all priors tried")
+  
+  if(!any(is.nan(fit$se))) {
+    return(fit)
+  }
+  fixPar = c(1, 1, NA, 4)
+  
+  fit <- crawl::crwMLE(
+    mov.model =  ~ 1,
+    err.model = list(
+      x =  ~ ln.sd.x - 1,
+      y =  ~ ln.sd.y - 1,
+      rho =  ~ error.corr
+    ),
+    data = d,
+    Time.name = "date_time",
+    initial.state = init,
+    fixPar = fixPar,
+    attempts = 1,
+    control = list(
+      maxit = 30,
+      trace = 0,
+      REPORT = 1
+    ),
+    initialSANN = list(
+      maxit = 1000,
+      trace = 1,
+      REPORT = 1
+    )
+  )
+  
   fit
 }
