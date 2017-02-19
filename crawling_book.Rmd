@@ -1,0 +1,52 @@
+---
+title: "A Guide to crawl-ing with R"
+author: "Josh M. London and Devin S. Johnson"
+date: "`r Sys.Date()`"
+output:
+  bookdown::gitbook:
+    lib_dir: book_assets
+    split_by: none
+---
+
+# About the Authors {-}
+
+# Preface {-}
+
+# (PART) Theoretical Crawling {-}
+
+# The Mathematics and Statistics of Animal Movement
+
+## Mathematics
+
+### Discrete-time random walks
+
+### Correlated random walks
+
+### Brownian motion
+
+### Ornstein-Ulenbeck (OU) process
+
+### Stochastic differential equations
+
+### Integrated SDEs
+
+### Continuous-time CRW
+
+
+## Statistics
+
+### Maximum likelihood inference 
+
+### Bayesian inference
+
+### State-space models
+
+### Kalman filter/smoother (KFS)
+
+### Practical Bayesian inference
+
+### Process imputation
+
+# (PART) Practical Crawling {-}
+
+# A Pragmatic Guide for Analysis with `crawl`
