@@ -96,6 +96,12 @@
 </ul></li>
 <li class="chapter" data-level="2.2" data-path="crawl-practical.html"><a href="crawl-practical.html#assembling-source-data"><i class="fa fa-check"></i><b>2.2</b> Assembling Source Data</a></li>
 <li class="chapter" data-level="2.3" data-path="crawl-practical.html"><a href="crawl-practical.html#tidy-data-for-telemetry"><i class="fa fa-check"></i><b>2.3</b> Tidy Data for Telemetry</a></li>
+<li class="chapter" data-level="2.4" data-path="crawl-practical.html"><a href="crawl-practical.html#preparing-input-data-for-crawl"><i class="fa fa-check"></i><b>2.4</b> Preparing Input Data for <code>crawl</code></a></li>
+<li class="chapter" data-level="2.5" data-path="crawl-practical.html"><a href="crawl-practical.html#determining-your-model-parameters"><i class="fa fa-check"></i><b>2.5</b> Determining Your Model Parameters</a></li>
+<li class="chapter" data-level="2.6" data-path="crawl-practical.html"><a href="crawl-practical.html#exploring-and-troubleshooting-model-results"><i class="fa fa-check"></i><b>2.6</b> Exploring and Troubleshooting Model Results</a></li>
+<li class="chapter" data-level="2.7" data-path="crawl-practical.html"><a href="crawl-practical.html#predicting-a-movement-track"><i class="fa fa-check"></i><b>2.7</b> Predicting a Movement Track</a></li>
+<li class="chapter" data-level="2.8" data-path="crawl-practical.html"><a href="crawl-practical.html#simulating-tracks-from-the-posterior"><i class="fa fa-check"></i><b>2.8</b> Simulating Tracks from the Posterior</a></li>
+<li class="chapter" data-level="2.9" data-path="crawl-practical.html"><a href="crawl-practical.html#visualization-of-results"><i class="fa fa-check"></i><b>2.9</b> Visualization of Results</a></li>
 </ul></li>
 </ul>
 
@@ -116,6 +122,20 @@
             <section class="normal" id="section-">
 <div id="a-pragmatic-guide-for-analysis-with-crawl" class="section level1">
 <h1><span class="header-section-number">2</span> A Pragmatic Guide for Analysis with <code>crawl</code></h1>
+<p>The <code>crawl</code> package is designed and built with the idea that it should be accessible and useful to a research biologist with some intermediate R skills and an understanding of the basic statistical theory behind the analysis of animal movement. This portion of the book will focus on providing the user with suggested principles, workflows, and pragmatic approaches that, if followed, should make analysis with <code>crawl</code> more efficient and reliable.</p>
+<p>As with anything in science and R, there are a number of right ways to approach a problem. The workflows and principles outline here aren’t the only way to use <code>crawl</code>. However, this content has been developed after years of working with researchers and troubleshooting common issues. For most users, following this guide will prove a successful endeavor. More advanced users or those with specific needs should feel free to refer to this as a starting point but then expand to meet their need.</p>
+<p>This content is broken up in the following sections:</p>
+<ol style="list-style-type: decimal">
+<li>Analysis and Coding Principles</li>
+<li>Assembling Source Data</li>
+<li>Tidy Data for Telemetry</li>
+<li>Preparing Input Data for <code>crawl</code></li>
+<li>Determining Your Model Parameters</li>
+<li>Exploring and Troubleshooting Model Results</li>
+<li>Predicting a Movement Track</li>
+<li>Simulating Tracks from the Posterior</li>
+<li>Visualization of Results</li>
+</ol>
 <div id="analysis-and-coding-principles" class="section level2">
 <h2><span class="header-section-number">2.1</span> Analysis and Coding Principles</h2>
 <div id="source-data-are-read-only" class="section level3">
@@ -139,6 +159,24 @@
 </div>
 <div id="tidy-data-for-telemetry" class="section level2">
 <h2><span class="header-section-number">2.3</span> Tidy Data for Telemetry</h2>
+</div>
+<div id="preparing-input-data-for-crawl" class="section level2">
+<h2><span class="header-section-number">2.4</span> Preparing Input Data for <code>crawl</code></h2>
+</div>
+<div id="determining-your-model-parameters" class="section level2">
+<h2><span class="header-section-number">2.5</span> Determining Your Model Parameters</h2>
+</div>
+<div id="exploring-and-troubleshooting-model-results" class="section level2">
+<h2><span class="header-section-number">2.6</span> Exploring and Troubleshooting Model Results</h2>
+</div>
+<div id="predicting-a-movement-track" class="section level2">
+<h2><span class="header-section-number">2.7</span> Predicting a Movement Track</h2>
+</div>
+<div id="simulating-tracks-from-the-posterior" class="section level2">
+<h2><span class="header-section-number">2.8</span> Simulating Tracks from the Posterior</h2>
+</div>
+<div id="visualization-of-results" class="section level2">
+<h2><span class="header-section-number">2.9</span> Visualization of Results</h2>
 
 </div>
 </div>

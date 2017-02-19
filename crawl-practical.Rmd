@@ -2,6 +2,35 @@
 
 # A Pragmatic Guide for Analysis with `crawl`
 
+The `crawl` package is designed and built with the idea that it should be 
+accessible and useful to a research biologist with some intermediate R
+skills and an understanding of the basic statistical theory behind 
+the analysis of animal movement. This portion of the book will focus on 
+providing the user with suggested principles, workflows, and pragmatic
+approaches that, if followed, should make analysis with `crawl` more
+efficient and reliable.
+
+As with anything in science and R, there are a number of right ways to 
+approach a problem. The workflows and principles outline here aren't the only
+way to use `crawl`. However, this content has been developed after years of
+working with researchers and troubleshooting common issues. For most users,
+following this guide will prove a successful endeavor. More advanced users
+or those with specific needs should feel free to refer to this as a starting
+point but then expand to meet their need.
+
+This content is broken up in the following sections:
+
+1. Analysis and Coding Principles
+2. Assembling Source Data
+3. Tidy Data for Telemetry
+4. Preparing Input Data for `crawl`
+5. Determining Your Model Parameters
+6. Exploring and Troubleshooting Model Results
+7. Predicting a Movement Track
+8. Simulating Tracks from the Posterior
+9. Visualization of Results
+
+
 ## Analysis and Coding Principles
 
 ### Source Data are Read Only
@@ -17,3 +46,15 @@
 ## Assembling Source Data
 
 ## Tidy Data for Telemetry
+
+## Preparing Input Data for `crawl`
+
+## Determining Your Model Parameters
+
+## Exploring and Troubleshooting Model Results
+
+## Predicting a Movement Track
+
+## Simulating Tracks from the Posterior
+
+## Visualization of Results
