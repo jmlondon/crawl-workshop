@@ -5,6 +5,8 @@ library(argosfilter)
 library(crawl)
 library(sp)
 
+## This is a custom function to remove spaces and - from column names
+## and drop them all to lower case
 fix_colnames <- function(x) {
   colnames(x) <- gsub(" ", "_", colnames(x))
   colnames(x) <- gsub("-", "_", colnames(x))
@@ -12,13 +14,14 @@ fix_colnames <- function(x) {
   x
 }
 
+## custom function for coordinates(x) <- so we can use with purrr::map()
 sp_coords <- function(x) {
   sp::coordinates(x) <- ~ longitude + latitude
   proj4string(x) <- "+init=epsg:4326"
   x
 }
 
-file_paths <- list.files('examples/data/',
+file_paths <- dir('examples/data/',
                          "*-Locations.csv",
                          full.names = TRUE)
 
@@ -43,7 +46,7 @@ my_cols <- cols(
 )
 
 
-file_paths %>% 
+my_data <- file_paths %>% 
   purrr::map(read_csv,col_types = my_cols) %>% 
   purrr::map(fix_colnames) %>%  
   purrr::map(~ dplyr::rename(.x, 
@@ -66,17 +69,16 @@ file_paths %>%
                        ) %>% 
   purrr::map(~ dplyr::mutate(.x,
                              error_semi_major_axis = ifelse(
-                               type=='User',100,
+                               type=='User',500,
                                error_semi_major_axis),
                              error_semi_minor_axis = ifelse(
-                               type=='User',100,
+                               type=='User',500,
                                error_semi_minor_axis),
                              error_ellipse_orientation = ifelse(
                                type=='User',0,
                                error_ellipse_orientation)
   )
-  ) -> 
-  my_data
+  )
 
 for (i in 1:length(my_data)) {
 my_data[[i]]$filtered <- argosfilter::sdafilter(
@@ -91,28 +93,30 @@ my_data %>%
   purrr::map(~ dplyr::filter(.x,
     filtered %in% c("not", "end location"))) %>% 
   purrr::map(~ dplyr::select(.x,-filtered)) %>% 
-  map(~ dplyr::arrange(.x, deployid,date_time)) ->
+  purrr::map(~ dplyr::arrange(.x, deployid,date_time)) ->
   my_data
 
 
 diag_data <- my_data %>% 
-  map( ~ model.matrix(
+  purrr::map( ~ model.matrix(
   ~ error_semi_major_axis + error_semi_minor_axis +
     error_ellipse_orientation,
   model.frame(~ .,.x, na.action = na.pass)
 )[,-1]) %>% 
-  map(~ crawl::argosDiag2Cov(
+  purrr::map(~ crawl::argosDiag2Cov(
   .x[,1], .x[,2], .x[,3]
 ))
 
-input_tbls <- map2(my_data,diag_data,
+input_tbls <- purrr::map2(my_data,diag_data,
             bind_cols) %>% 
-  map(sp_coords) %>% 
-  map(sp::spTransform,CRS("+init=epsg:3571"))
+  purrr::map(sp_coords) %>% 
+  purrr::map(sp::spTransform,CRS("+init=epsg:3571"))
 
-source('fit_crawl.R')
+source('examples/scripts/fit_crawl.R')
 
-fits <- pmap(list(input_tbls),fit_crawl)
+fits <- purrr::map(input_tbls,fit_crawl)
 names(fits) <- c("seal160941","seal164831")
 
-predicts <- pmap(list(fits),crwPredict())
+## this only works with a development version of crawl
+predicts <- purrr::map(fits,crwPredict,predTime = '1 hour') %>% 
+  tibble(preds = .)
