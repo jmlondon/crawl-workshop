@@ -13,8 +13,6 @@ obsData <- crawl_input %>%
                 date_time = date_time) %>%
   dplyr::arrange(deployid, date_hour, date_time)
 
-obsData <- obsData[!duplicated(obsData$date_time),]
-
 diag_data = model.matrix(
   ~ error_semi_major_axis + error_semi_minor_axis +
     error_ellipse_orientation,
