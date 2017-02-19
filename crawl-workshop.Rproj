@@ -13,3 +13,6 @@ RnwWeave: knitr
 LaTeX: XeLaTeX
 
 AutoAppendNewline: Yes
+
+BuildType: Makefile
+MakefilePath: ~/_projects/r/crawl-workshop
