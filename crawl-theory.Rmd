@@ -1,17 +1,3 @@
----
-title: "A Guide to crawl-ing with R"
-author: "Josh M. London and Devin S. Johnson"
-date: "`r Sys.Date()`"
-output:
-  bookdown::gitbook:
-    lib_dir: book_assets
-    split_by: none
----
-
-# About the Authors {-}
-
-# Preface {-}
-
 # (PART) Theoretical Crawling {-}
 
 # The Mathematics and Statistics of Animal Movement
@@ -47,6 +33,3 @@ output:
 
 ### Process imputation
 
-# (PART) Practical Crawling {-}
-
-# A Pragmatic Guide for Analysis with `crawl`

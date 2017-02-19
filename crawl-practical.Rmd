@@ -1,0 +1,19 @@
+# (PART) Practical Crawling {-}
+
+# A Pragmatic Guide for Analysis with `crawl`
+
+## Analysis and Coding Principles
+
+### Source Data are Read Only
+
+### Script Everything
+
+### Document Along the Way
+
+### Embrace the Tidyverse
+
+### Anticipate Errors & Trap Them
+
+## Assembling Source Data
+
+## Tidy Data for Telemetry

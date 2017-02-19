@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html >
+
+<head>
+
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>A Guide to Crawl-ing with R</title>
+  <meta content="text/html; charset=UTF-8" http-equiv="Content-Type">
+  <meta name="description" content="A Guide to Crawl-ing with R">
+  <meta name="generator" content="bookdown 0.3 and GitBook 2.6.7">
+
+  <meta property="og:title" content="A Guide to Crawl-ing with R" />
+  <meta property="og:type" content="book" />
+  
+  
+  
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="A Guide to Crawl-ing with R" />
+  
+  
+  
+
+<meta name="author" content="Josh M. London and Devin S. Johnson">
+
+
+<meta name="date" content="2017-02-18">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  
+  
+
+<link rel="next" href="crawl-theory.html">
+
+<script src="assets/jquery-2.2.3/jquery.min.js"></script>
+<link href="assets/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="assets/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+
+</head>
+
+<body>
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>About the Authors</a></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#preface"><i class="fa fa-check"></i>Preface</a></li>
+<li class="part"><span><b>I Theoretical Crawling</b></span></li>
+<li class="chapter" data-level="1" data-path="crawl-theory.html"><a href="crawl-theory.html"><i class="fa fa-check"></i><b>1</b> The Mathematics and Statistics of Animal Movement</a><ul>
+<li class="chapter" data-level="1.1" data-path="crawl-theory.html"><a href="crawl-theory.html#mathematics"><i class="fa fa-check"></i><b>1.1</b> Mathematics</a><ul>
+<li class="chapter" data-level="1.1.1" data-path="crawl-theory.html"><a href="crawl-theory.html#discrete-time-random-walks"><i class="fa fa-check"></i><b>1.1.1</b> Discrete-time random walks</a></li>
+<li class="chapter" data-level="1.1.2" data-path="crawl-theory.html"><a href="crawl-theory.html#correlated-random-walks"><i class="fa fa-check"></i><b>1.1.2</b> Correlated random walks</a></li>
+<li class="chapter" data-level="1.1.3" data-path="crawl-theory.html"><a href="crawl-theory.html#brownian-motion"><i class="fa fa-check"></i><b>1.1.3</b> Brownian motion</a></li>
+<li class="chapter" data-level="1.1.4" data-path="crawl-theory.html"><a href="crawl-theory.html#ornstein-ulenbeck-ou-process"><i class="fa fa-check"></i><b>1.1.4</b> Ornstein-Ulenbeck (OU) process</a></li>
+<li class="chapter" data-level="1.1.5" data-path="crawl-theory.html"><a href="crawl-theory.html#stochastic-differential-equations"><i class="fa fa-check"></i><b>1.1.5</b> Stochastic differential equations</a></li>
+<li class="chapter" data-level="1.1.6" data-path="crawl-theory.html"><a href="crawl-theory.html#integrated-sdes"><i class="fa fa-check"></i><b>1.1.6</b> Integrated SDEs</a></li>
+<li class="chapter" data-level="1.1.7" data-path="crawl-theory.html"><a href="crawl-theory.html#continuous-time-crw"><i class="fa fa-check"></i><b>1.1.7</b> Continuous-time CRW</a></li>
+</ul></li>
+<li class="chapter" data-level="1.2" data-path="crawl-theory.html"><a href="crawl-theory.html#statistics"><i class="fa fa-check"></i><b>1.2</b> Statistics</a><ul>
+<li class="chapter" data-level="1.2.1" data-path="crawl-theory.html"><a href="crawl-theory.html#maximum-likelihood-inference"><i class="fa fa-check"></i><b>1.2.1</b> Maximum likelihood inference</a></li>
+<li class="chapter" data-level="1.2.2" data-path="crawl-theory.html"><a href="crawl-theory.html#bayesian-inference"><i class="fa fa-check"></i><b>1.2.2</b> Bayesian inference</a></li>
+<li class="chapter" data-level="1.2.3" data-path="crawl-theory.html"><a href="crawl-theory.html#state-space-models"><i class="fa fa-check"></i><b>1.2.3</b> State-space models</a></li>
+<li class="chapter" data-level="1.2.4" data-path="crawl-theory.html"><a href="crawl-theory.html#kalman-filtersmoother-kfs"><i class="fa fa-check"></i><b>1.2.4</b> Kalman filter/smoother (KFS)</a></li>
+<li class="chapter" data-level="1.2.5" data-path="crawl-theory.html"><a href="crawl-theory.html#practical-bayesian-inference"><i class="fa fa-check"></i><b>1.2.5</b> Practical Bayesian inference</a></li>
+<li class="chapter" data-level="1.2.6" data-path="crawl-theory.html"><a href="crawl-theory.html#process-imputation"><i class="fa fa-check"></i><b>1.2.6</b> Process imputation</a></li>
+</ul></li>
+</ul></li>
+<li class="part"><span><b>II Practical Crawling</b></span></li>
+<li class="chapter" data-level="2" data-path="crawl-practical.html"><a href="crawl-practical.html"><i class="fa fa-check"></i><b>2</b> A Pragmatic Guide for Analysis with <code>crawl</code></a><ul>
+<li class="chapter" data-level="2.1" data-path="crawl-practical.html"><a href="crawl-practical.html#analysis-and-coding-principles"><i class="fa fa-check"></i><b>2.1</b> Analysis and Coding Principles</a><ul>
+<li class="chapter" data-level="2.1.1" data-path="crawl-practical.html"><a href="crawl-practical.html#source-data-are-read-only"><i class="fa fa-check"></i><b>2.1.1</b> Source Data are Read Only</a></li>
+<li class="chapter" data-level="2.1.2" data-path="crawl-practical.html"><a href="crawl-practical.html#script-everything"><i class="fa fa-check"></i><b>2.1.2</b> Script Everything</a></li>
+<li class="chapter" data-level="2.1.3" data-path="crawl-practical.html"><a href="crawl-practical.html#document-along-the-way"><i class="fa fa-check"></i><b>2.1.3</b> Document Along the Way</a></li>
+<li class="chapter" data-level="2.1.4" data-path="crawl-practical.html"><a href="crawl-practical.html#embrace-the-tidyverse"><i class="fa fa-check"></i><b>2.1.4</b> Embrace the Tidyverse</a></li>
+<li class="chapter" data-level="2.1.5" data-path="crawl-practical.html"><a href="crawl-practical.html#anticipate-errors-trap-them"><i class="fa fa-check"></i><b>2.1.5</b> Anticipate Errors &amp; Trap Them</a></li>
+</ul></li>
+<li class="chapter" data-level="2.2" data-path="crawl-practical.html"><a href="crawl-practical.html#assembling-source-data"><i class="fa fa-check"></i><b>2.2</b> Assembling Source Data</a></li>
+<li class="chapter" data-level="2.3" data-path="crawl-practical.html"><a href="crawl-practical.html#tidy-data-for-telemetry"><i class="fa fa-check"></i><b>2.3</b> Tidy Data for Telemetry</a></li>
+</ul></li>
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">A Guide to Crawl-ing with R</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="header">
+<h1 class="title">A Guide to Crawl-ing with R</h1>
+<h4 class="author"><em>Josh M. London and Devin S. Johnson</em></h4>
+<h4 class="date"><em>2017-02-18</em></h4>
+</div>
+<div id="about-the-authors" class="section level1 unnumbered">
+<h1>About the Authors</h1>
+</div>
+<div id="preface" class="section level1 unnumbered">
+<h1>Preface</h1>
+
+</div>
+
+
+
+            </section>
+
+          </div>
+        </div>
+      </div>
+
+<a href="crawl-theory.html" class="navigation navigation-next navigation-unique" aria-label="Next page""><i class="fa fa-angle-right"></i></a>
+
+<script src="assets/gitbook-2.6.7/js/app.min.js"></script>
+<script src="assets/gitbook-2.6.7/js/lunr.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="assets/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="assets/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script>
+require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"google": false,
+"weibo": false,
+"instapper": false,
+"vk": false,
+"all": ["facebook", "google", "twitter", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": null,
+"text": null
+},
+"download": null,
+"toc": {
+"collapse": "subsection"
+}
+});
+});
+</script>
+
+</body>
+
+</html>

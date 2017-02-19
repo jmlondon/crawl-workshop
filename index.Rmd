@@ -1,0 +1,14 @@
+---
+title: "A Guide to Crawl-ing with R"
+author: "Josh M. London and Devin S. Johnson"
+date: "`r Sys.Date()`"
+site: "bookdown::bookdown_site"
+output:
+  bookdown::gitbook:
+    lib_dir: assets
+    split_by: rmd
+---
+
+# About the Authors {-}
+
+# Preface {-}
