@@ -45,6 +45,96 @@ This content is broken up in the following sections:
 
 ## Assembling Source Data
 
+Where and how you access the source data for your telemetry study will depend
+on the type of tag and vendor. Argos location data is available to users from the 
+Argos website and many third party sites and respositories (e.g. movebank, 
+sea-turtle.org) have API connections to ArgosWeb that can faciliate data access.
+Each tag manufacturer often has additional data streams included within the
+Argos transmission that require specific software or processing to translate.
+Both the Sea Mammal Research Unit (SMRU) and Wildlife Computers provide online
+data portals that provide users access to the location and additional sensor
+data.
+
+Regardless of how the data are retrieved, these files should be treated as read
+only and not edited. ArgosWeb and vendors have, typically, kept the data formats
+and structure consistent over time. This affords end users the ability to develop
+custom processing scripts without much fear the formats will change and break
+their scripts.
+
+Here we will demonstrate the development of such a script using data downloaded
+from the Wildlife Computers data portal. All data are grouped by deployment and
+presented in various comma-separated files. The `*-Locations.csv` contains all
+of the Argos location estimates determined for the deployment. At a minimum, this
+file includes identifying columns such as `DeployID`, `PTT`, `Date`, `Quality`,
+`Type`, `Latitude`, and `Longitude`. If the Argos Kalman filtering
+approach has been enabled (which it should be for any modern tag deployment),
+then additional data will be found in columns that describe the error ellipses
+(e.g. `Error Semi-major axis`, `Error Semi-minor axis`, 
+`Error Ellipse orientation`). Note, if the tag transmitted GPS/FastLoc data,
+this file will list those records as `Type = 'FastGPS'`.
+
+The other file of interest we will be working with is an example `*-Histos.csv`.
+These files include dive and haul-out behavior data derived from sensors on the
+tag. Most notably, the pressure transducer (for depth) and the salt-water switch
+(for determining wet/dry status). We will focus on processing this file to 
+demonstrate how we can properly _tidy_ our data.
+
+We will rely on the `tidyverse` set of packages plus `purrr` and `lubridate`
+to make reading and processing these files easier and more reliable.
+
+```{r, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(purrr)
+library(lubridate)
+```
+
+The `readr` includes the `read_csv()` function which we will rely on to read
+the csv data into R.
+
+```{r}
+path_to_file <- "examples/data/160941-Locations.csv"
+tbl_locs <- readr::read_csv(path_to_file)
+```
+
+The `readr::read_csv()` function tries to interpret the proper data types for 
+each of the columns and provides us the column specifications it determined. In
+most cases, the function gets this correct. However, if we examine the resulting
+tibble, we see that the `Date` column was read in as a _character_ data type.
+
+```{r}
+str(tbl_locs)
+```
+
+To correct this, we need to provide our own `cols()` specification. We can do
+this by simply modifying the specification `readr::read_csv()` provided us. In
+this case, we want the `Date` column to rely on `col_datetime` and to parse
+the character string using the format `%H:%M:%S %d-%b-%Y`.
+
+```{r}
+my_cols <- cols(
+  DeployID = col_character(),
+  Ptt = col_integer(),
+  Instr = col_character(),
+  Date = col_datetime("%H:%M:%S %d-%b-%Y"), # changed from col_character()
+  Type = col_character(),
+  Quality = col_character(),
+  Latitude = col_double(),
+  Longitude = col_double(),
+  `Error radius` = col_integer(),
+  `Error Semi-major axis` = col_integer(),
+  `Error Semi-minor axis` = col_integer(),
+  `Error Ellipse orientation` = col_integer(),
+  Offset = col_character(),
+  `Offset orientation` = col_character(),
+  `GPE MSD` = col_character(),
+  `GPE U` = col_character(),
+  Count = col_character(),
+  Comment = col_character()
+)
+
+tbl_locs <- readr::read_csv(path_to_file,col_types = my_cols)
+```
+
 ## Tidy Data for Telemetry
 
 ## Preparing Input Data for `crawl`

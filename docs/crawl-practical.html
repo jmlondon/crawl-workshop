@@ -26,7 +26,7 @@
 <meta name="author" content="Josh M. London and Devin S. Johnson">
 
 
-<meta name="date" content="2017-02-18">
+<meta name="date" content="2017-02-19">
 
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -51,6 +51,43 @@
 
 
 
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+</style>
 
 </head>
 
@@ -156,6 +193,123 @@
 </div>
 <div id="assembling-source-data" class="section level2">
 <h2><span class="header-section-number">2.2</span> Assembling Source Data</h2>
+<p>Where and how you access the source data for your telemetry study will depend on the type of tag and vendor. Argos location data is available to users from the Argos website and many third party sites and respositories (e.g. movebank, sea-turtle.org) have API connections to ArgosWeb that can faciliate data access. Each tag manufacturer often has additional data streams included within the Argos transmission that require specific software or processing to translate. Both the Sea Mammal Research Unit (SMRU) and Wildlife Computers provide online data portals that provide users access to the location and additional sensor data.</p>
+<p>Regardless of how the data are retrieved, these files should be treated as read only and not edited. ArgosWeb and vendors have, typically, kept the data formats and structure consistent over time. This affords end users the ability to develop custom processing scripts without much fear the formats will change and break their scripts.</p>
+<p>Here we will demonstrate the development of such a script using data downloaded from the Wildlife Computers data portal. All data are grouped by deployment and presented in various comma-separated files. The <code>*-Locations.csv</code> contains all of the Argos location estimates determined for the deployment. At a minimum, this file includes identifying columns such as <code>DeployID</code>, <code>PTT</code>, <code>Date</code>, <code>Quality</code>, <code>Type</code>, <code>Latitude</code>, and <code>Longitude</code>. If the Argos Kalman filtering approach has been enabled (which it should be for any modern tag deployment), then additional data will be found in columns that describe the error ellipses (e.g. <code>Error Semi-major axis</code>, <code>Error Semi-minor axis</code>, <code>Error Ellipse orientation</code>). Note, if the tag transmitted GPS/FastLoc data, this file will list those records as <code>Type = 'FastGPS'</code>.</p>
+<p>The other file of interest we will be working with is an example <code>*-Histos.csv</code>. These files include dive and haul-out behavior data derived from sensors on the tag. Most notably, the pressure transducer (for depth) and the salt-water switch (for determining wet/dry status). We will focus on processing this file to demonstrate how we can properly <em>tidy</em> our data.</p>
+<p>We will rely on the <code>tidyverse</code> set of packages plus <code>purrr</code> and <code>lubridate</code> to make reading and processing these files easier and more reliable.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(tidyverse)
+<span class="kw">library</span>(purrr)
+<span class="kw">library</span>(lubridate)</code></pre></div>
+<p>The <code>readr</code> includes the <code>read_csv()</code> function which we will rely on to read the csv data into R.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">path_to_file &lt;-<span class="st"> &quot;examples/data/160941-Locations.csv&quot;</span>
+tbl_locs &lt;-<span class="st"> </span>readr::<span class="kw">read_csv</span>(path_to_file)</code></pre></div>
+<pre><code>## Parsed with column specification:
+## cols(
+##   DeployID = col_character(),
+##   Ptt = col_integer(),
+##   Instr = col_character(),
+##   Date = col_character(),
+##   Type = col_character(),
+##   Quality = col_character(),
+##   Latitude = col_double(),
+##   Longitude = col_double(),
+##   `Error radius` = col_integer(),
+##   `Error Semi-major axis` = col_integer(),
+##   `Error Semi-minor axis` = col_integer(),
+##   `Error Ellipse orientation` = col_integer(),
+##   Offset = col_character(),
+##   `Offset orientation` = col_character(),
+##   `GPE MSD` = col_character(),
+##   `GPE U` = col_character(),
+##   Count = col_character(),
+##   Comment = col_character()
+## )</code></pre>
+<p>The <code>readr::read_csv()</code> function tries to interpret the proper data types for each of the columns and provides us the column specifications it determined. In most cases, the function gets this correct. However, if we examine the resulting tibble, we see that the <code>Date</code> column was read in as a <em>character</em> data type.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">str</span>(tbl_locs)</code></pre></div>
+<pre><code>## Classes &#39;tbl_df&#39;, &#39;tbl&#39; and &#39;data.frame&#39;:    973 obs. of  18 variables:
+##  $ DeployID                 : chr  &quot;PV2016_3024_15A0909&quot; &quot;PV2016_3024_15A0909&quot; &quot;PV2016_3024_15A0909&quot; &quot;PV2016_3024_15A0909&quot; ...
+##  $ Ptt                      : int  160941 160941 160941 160941 160941 160941 160941 160941 160941 160941 ...
+##  $ Instr                    : chr  &quot;Mk10&quot; &quot;Mk10&quot; &quot;Mk10&quot; &quot;Mk10&quot; ...
+##  $ Date                     : chr  &quot;03:08:48 22-Sep-2016&quot; &quot;03:38:04 22-Sep-2016&quot; &quot;04:00:45 22-Sep-2016&quot; &quot;04:47:41 22-Sep-2016&quot; ...
+##  $ Type                     : chr  &quot;Argos&quot; &quot;Argos&quot; &quot;Argos&quot; &quot;Argos&quot; ...
+##  $ Quality                  : chr  &quot;B&quot; &quot;A&quot; &quot;1&quot; &quot;3&quot; ...
+##  $ Latitude                 : num  52.7 52.7 52.7 52.7 52.8 ...
+##  $ Longitude                : num  174 174 174 174 174 ...
+##  $ Error radius             : int  NA 217 655 189 272 850 3067 1761 3034 2796 ...
+##  $ Error Semi-major axis    : int  NA 454 2375 628 2336 3493 5343 3293 6088 6778 ...
+##  $ Error Semi-minor axis    : int  NA 103 180 56 31 206 1760 941 1512 1153 ...
+##  $ Error Ellipse orientation: int  NA 105 113 62 78 69 91 85 96 94 ...
+##  $ Offset                   : chr  NA NA NA NA ...
+##  $ Offset orientation       : chr  NA NA NA NA ...
+##  $ GPE MSD                  : chr  NA NA NA NA ...
+##  $ GPE U                    : chr  NA NA NA NA ...
+##  $ Count                    : chr  NA NA NA NA ...
+##  $ Comment                  : chr  NA NA NA NA ...
+##  - attr(*, &quot;spec&quot;)=List of 2
+##   ..$ cols   :List of 18
+##   .. ..$ DeployID                 : list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_character&quot; &quot;collector&quot;
+##   .. ..$ Ptt                      : list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_integer&quot; &quot;collector&quot;
+##   .. ..$ Instr                    : list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_character&quot; &quot;collector&quot;
+##   .. ..$ Date                     : list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_character&quot; &quot;collector&quot;
+##   .. ..$ Type                     : list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_character&quot; &quot;collector&quot;
+##   .. ..$ Quality                  : list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_character&quot; &quot;collector&quot;
+##   .. ..$ Latitude                 : list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_double&quot; &quot;collector&quot;
+##   .. ..$ Longitude                : list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_double&quot; &quot;collector&quot;
+##   .. ..$ Error radius             : list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_integer&quot; &quot;collector&quot;
+##   .. ..$ Error Semi-major axis    : list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_integer&quot; &quot;collector&quot;
+##   .. ..$ Error Semi-minor axis    : list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_integer&quot; &quot;collector&quot;
+##   .. ..$ Error Ellipse orientation: list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_integer&quot; &quot;collector&quot;
+##   .. ..$ Offset                   : list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_character&quot; &quot;collector&quot;
+##   .. ..$ Offset orientation       : list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_character&quot; &quot;collector&quot;
+##   .. ..$ GPE MSD                  : list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_character&quot; &quot;collector&quot;
+##   .. ..$ GPE U                    : list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_character&quot; &quot;collector&quot;
+##   .. ..$ Count                    : list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_character&quot; &quot;collector&quot;
+##   .. ..$ Comment                  : list()
+##   .. .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_character&quot; &quot;collector&quot;
+##   ..$ default: list()
+##   .. ..- attr(*, &quot;class&quot;)= chr  &quot;collector_guess&quot; &quot;collector&quot;
+##   ..- attr(*, &quot;class&quot;)= chr &quot;col_spec&quot;</code></pre>
+<p>To correct this, we need to provide our own <code>cols()</code> specification. We can do this by simply modifying the specification <code>readr::read_csv()</code> provided us. In this case, we want the <code>Date</code> column to rely on <code>col_datetime</code> and to parse the character string using the format <code>%H:%M:%S %d-%b-%Y</code>.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">my_cols &lt;-<span class="st"> </span><span class="kw">cols</span>(
+  <span class="dt">DeployID =</span> <span class="kw">col_character</span>(),
+  <span class="dt">Ptt =</span> <span class="kw">col_integer</span>(),
+  <span class="dt">Instr =</span> <span class="kw">col_character</span>(),
+  <span class="dt">Date =</span> <span class="kw">col_datetime</span>(<span class="st">&quot;%H:%M:%S %d-%b-%Y&quot;</span>), <span class="co"># changed from col_character()</span>
+  <span class="dt">Type =</span> <span class="kw">col_character</span>(),
+  <span class="dt">Quality =</span> <span class="kw">col_character</span>(),
+  <span class="dt">Latitude =</span> <span class="kw">col_double</span>(),
+  <span class="dt">Longitude =</span> <span class="kw">col_double</span>(),
+  <span class="st">`</span><span class="dt">Error radius</span><span class="st">`</span> =<span class="st"> </span><span class="kw">col_integer</span>(),
+  <span class="st">`</span><span class="dt">Error Semi-major axis</span><span class="st">`</span> =<span class="st"> </span><span class="kw">col_integer</span>(),
+  <span class="st">`</span><span class="dt">Error Semi-minor axis</span><span class="st">`</span> =<span class="st"> </span><span class="kw">col_integer</span>(),
+  <span class="st">`</span><span class="dt">Error Ellipse orientation</span><span class="st">`</span> =<span class="st"> </span><span class="kw">col_integer</span>(),
+  <span class="dt">Offset =</span> <span class="kw">col_character</span>(),
+  <span class="st">`</span><span class="dt">Offset orientation</span><span class="st">`</span> =<span class="st"> </span><span class="kw">col_character</span>(),
+  <span class="st">`</span><span class="dt">GPE MSD</span><span class="st">`</span> =<span class="st"> </span><span class="kw">col_character</span>(),
+  <span class="st">`</span><span class="dt">GPE U</span><span class="st">`</span> =<span class="st"> </span><span class="kw">col_character</span>(),
+  <span class="dt">Count =</span> <span class="kw">col_character</span>(),
+  <span class="dt">Comment =</span> <span class="kw">col_character</span>()
+)
+
+tbl_locs &lt;-<span class="st"> </span>readr::<span class="kw">read_csv</span>(path_to_file,<span class="dt">col_types =</span> my_cols)</code></pre></div>
 </div>
 <div id="tidy-data-for-telemetry" class="section level2">
 <h2><span class="header-section-number">2.3</span> Tidy Data for Telemetry</h2>
