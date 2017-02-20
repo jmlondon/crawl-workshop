@@ -10,7 +10,7 @@
 
 library(tidyverse)
 library(lubridate)
-%>% %>% %>% 
+
 ## Read data into R using the `readr` package's read_csv() function
 ## 
 
@@ -38,6 +38,7 @@ my_cols <- cols(
   Ptt = col_integer(),
   Instr = col_character(),
   Date = col_datetime("%H:%M:%S %d-%b-%Y"), # changed from col_character()
+  Type = col_character(),
   Quality = col_character(),
   Latitude = col_double(),
   Longitude = col_double(),
