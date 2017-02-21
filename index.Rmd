@@ -7,6 +7,9 @@ output:
   bookdown::gitbook:
     lib_dir: assets
     split_by: rmd
+    config:
+      toc:
+        collapse: none
 ---
 
 ## About the Authors {-}
