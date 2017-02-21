@@ -353,7 +353,40 @@ in line with tidy principles
 tbl_percent
 ```
 
+To further explore our imported data and confirm there aren't any remaining
+issues to address, we can create visual representations of the data. The first
+plot will rely on the `leaflet` package to create an interactive plot of the
+`tbl_locs` object. The second plot will create a heatmap of `tbl_percent` values.
 
+```{r}
+library(leaflet)
+library(sf)
+
+sf_locs <- st_as_sf(tbl_locs, coords = c("longitude","latitude")) %>% 
+  st_set_crs("+init=epsg:4326") %>% 
+  dplyr::mutate(id = ifelse(deployid == unique(deployid)[1], 1, 2))
+
+sf_lines <- sf_locs %>%
+  st_geometry() %>% 
+  st_cast("MULTIPOINT",ids = sf_locs$id) %>% 
+  st_cast("MULTILINESTRING") %>% 
+  st_sf(deployid = as.factor(unique(sf_locs$deployid)))
+
+pal <- colorFactor(ggthemes::ptol_pal()(2), 
+                   domain = sf_lines$deployid)
+
+m <- leaflet(data = sf_locs) %>% 
+  addProviderTiles("Esri.OceanBasemap") %>% 
+  addPolylines(data = sf_lines, weight = 2, color = ~pal(deployid)) %>% 
+  addCircleMarkers(radius = 2, 
+                   weight = 2, opacity = 1,
+                   color = ~pal(deployid)) %>% 
+  addLegend(pal = pal,values = ~deployid) %>% 
+  addMiniMap(tiles = providers$Esri.OceanBasemap,
+             toggleDisplay = T)
+
+m
+```
 
 
 ## Preparing Input Data for `crawl`
