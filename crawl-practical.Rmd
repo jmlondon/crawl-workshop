@@ -1,5 +1,11 @@
 # (PART) Practical Crawling {-}
 
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE, message = FALSE
+)
+```
+
 # A Pragmatic Guide for Analysis with `crawl`
 
 The `crawl` package is designed and built with the idea that it should be 
@@ -361,7 +367,9 @@ plot will rely on the `leaflet` package to create an interactive plot of the
 ```{r}
 library(leaflet)
 library(sf)
+```
 
+```{r}
 sf_locs <- st_as_sf(tbl_locs, coords = c("longitude","latitude")) %>% 
   st_set_crs("+init=epsg:4326") %>% 
   dplyr::mutate(id = ifelse(deployid == unique(deployid)[1], 1, 2))
@@ -371,7 +379,12 @@ sf_lines <- sf_locs %>%
   st_cast("MULTIPOINT",ids = sf_locs$id) %>% 
   st_cast("MULTILINESTRING") %>% 
   st_sf(deployid = as.factor(unique(sf_locs$deployid)))
+```
 
+(ref:leaflet-locs-fig-cap) An interactive map of observed satellite telemetry
+locations from two harbor seals in the Aleutian Islands. 
+
+```{r, leaflet-locs, out.width = '100%', fig.cap = '(ref:leaflet-locs-fig-cap)'}
 pal <- colorFactor(ggthemes::ptol_pal()(2), 
                    domain = sf_lines$deployid)
 
@@ -381,13 +394,40 @@ m <- leaflet(data = sf_locs) %>%
   addCircleMarkers(radius = 2, 
                    weight = 2, opacity = 1,
                    color = ~pal(deployid)) %>% 
-  addLegend(pal = pal,values = ~deployid) %>% 
+  addLegend(pal = pal,values = ~deployid,labels = ~deployid) %>% 
   addMiniMap(tiles = providers$Esri.OceanBasemap,
              toggleDisplay = T)
 
 m
 ```
 
+(ref:percent-timeline-heatmap) Depiction of hourly percent dry observations for
+two satellite tags deployed on harbor seals in the Aleutian Islands.
+
+```{r, timeline-heatmaps, out.width = '100%', fig.cap = '(ref:percent-timeline-heatmap)'}
+library(viridis)
+library(ggthemes)
+p <- tbl_percent %>% 
+  dplyr::mutate(solar_hour = date_hour + lubridate::dhours(11.5),
+                solar_hour = lubridate::hour(solar_hour),
+                deployid = factor(deployid)) %>% 
+  ggplot(aes(x = lubridate::date(date_hour), 
+                           y = solar_hour,
+                           fill = percent_dry)) +
+  geom_tile() +
+  scale_y_continuous(breaks = c(6,12,18)) +
+  scale_fill_viridis(name = "Percent Dry",
+                     guide = guide_colorbar(
+                       title.position = "bottom",
+                       barwidth = 25, barheight = 1 )) +
+  facet_wrap( ~ deployid, nrow = 2) +
+  theme_fivethirtyeight() +
+  theme(axis.title = element_text()) +
+  ylab("local solar hour") + xlab("") +
+  ggtitle(paste("Haul-out Behavior by Local Solar Hour")) +
+  theme(panel.grid.major.x = element_blank()) 
+p
+```
 
 ## Preparing Input Data for `crawl`
 
