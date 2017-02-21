@@ -1,8 +1,12 @@
 ---
 title: "A Guide to Crawl-ing with R"
+subtitle: "a book based on the 'learning to crawl' workshop(s)"
 author: "Josh M. London and Devin S. Johnson"
 date: "`r Sys.Date()`"
 site: "bookdown::bookdown_site"
+description: "This book provides mathematical and statistical background related to the modeling of animal movement from satellite telemetry data as well as pragmatic approaches and examples for implementing analysis with the R package, crawl."
+url: "https://jmlondon.github.io/crawl-workshop/"
+github-repo: "jmlondon/crawl-workshop"
 output:
   bookdown::gitbook:
     lib_dir: assets
@@ -17,7 +21,7 @@ output:
 Drs. Josh M. London and Devin S. Johnson are researchers at the NOAA Alaska Fisheries
 Science Center's Marine Mammal Laboratory in Seattle, Washington. Dr. London has over
 10 years of experience programming and deploying satellite tags on phocid seals. 
-He also has developed workflows for the management of telemetry data in R. 
+He has also developed various workflows for the management of telemetry data in R. 
 Dr. Johnson is a leading biomatrician with expertise in the analysis of animal
 movement. Dr. Johnson is the lead author and developer of the R package `crawl`.
 
@@ -27,7 +31,20 @@ This book is being developed simultaneously with a 3-day workshop on the use of 
 `crawl` package for analysis of animal movment in R. Significant components of this
 book, example code, and content will change. Please use code and examples with
 caution and contact the authors before relying on advice, code, or examples for
-real-world analysis.
+real-world analysis. Identification of errors is encouraged and folks should open
+an [issue via the GitHub repository](https://github.com/jmlondon/crawl-workshop/issues).
+We will also accept pull requests for any bug fixes or enhancements.
+
+A significant portion of this book is devoted to the support of the R package
+`crawl`. The package is available on [CRAN](https://cran.r-project.org/package=crawl) as well as [GitHub](https://github.com/NMML/crawl).
+
+If you are using `crawl` as part of a publication, please refer to the output from
+`citation('crawl')` for an appropriate citation. One should also consider referencing
+the original _Ecology_ paper from 2008.
+
+> Johnson, D. S., London, J. M., Lea, M.-A. and Durban, J. W. (2008), 
+> CONTINUOUS-TIME CORRELATED RANDOM WALK MODEL FOR ANIMAL TELEMETRY DATA. 
+> Ecology, 89: 1208–1215. doi:10.1890/07-1032.1
 
 ##### Disclaimer {-}
 

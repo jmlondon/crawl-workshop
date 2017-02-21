@@ -7,26 +7,26 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>A Guide to Crawl-ing with R</title>
   <meta content="text/html; charset=UTF-8" http-equiv="Content-Type">
-  <meta name="description" content="A Guide to Crawl-ing with R">
+  <meta name="description" content="This book provides mathematical and statistical background related to the modeling of animal movement from satellite telemetry data as well as pragmatic approaches and examples for implementing analysis with the R package, crawl.">
   <meta name="generator" content="bookdown 0.3 and GitBook 2.6.7">
 
   <meta property="og:title" content="A Guide to Crawl-ing with R" />
   <meta property="og:type" content="book" />
+  <meta property="og:url" content="<a href="https://jmlondon.github.io/crawl-workshop/" class="uri">https://jmlondon.github.io/crawl-workshop/</a>" />
   
-  
-  
-  
+  <meta property="og:description" content="This book provides mathematical and statistical background related to the modeling of animal movement from satellite telemetry data as well as pragmatic approaches and examples for implementing analysis with the R package, crawl." />
+  <meta name="github-repo" content="jmlondon/crawl-workshop" />
 
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="A Guide to Crawl-ing with R" />
   
-  
+  <meta name="twitter:description" content="This book provides mathematical and statistical background related to the modeling of animal movement from satellite telemetry data as well as pragmatic approaches and examples for implementing analysis with the R package, crawl." />
   
 
 <meta name="author" content="Josh M. London and Devin S. Johnson">
 
 
-<meta name="date" content="2017-02-20">
+<meta name="date" content="2017-02-21">
 
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -173,16 +173,22 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
             <section class="normal" id="section-">
 <div id="header">
 <h1 class="title">A Guide to Crawl-ing with R</h1>
+<h3 class="subtitle"><em>a book based on the ‘learning to crawl’ workshop(s)</em></h3>
 <h4 class="author"><em>Josh M. London and Devin S. Johnson</em></h4>
-<h4 class="date"><em>2017-02-20</em></h4>
+<h4 class="date"><em>2017-02-21</em></h4>
 </div>
 <div id="about-the-authors" class="section level2 unnumbered">
 <h2>About the Authors</h2>
-<p>Drs. Josh M. London and Devin S. Johnson are researchers at the NOAA Alaska Fisheries Science Center’s Marine Mammal Laboratory in Seattle, Washington. Dr. London has over 10 years of experience programming and deploying satellite tags on phocid seals. He also has developed workflows for the management of telemetry data in R. Dr. Johnson is a leading biomatrician with expertise in the analysis of animal movement. Dr. Johnson is the lead author and developer of the R package <code>crawl</code>.</p>
+<p>Drs. Josh M. London and Devin S. Johnson are researchers at the NOAA Alaska Fisheries Science Center’s Marine Mammal Laboratory in Seattle, Washington. Dr. London has over 10 years of experience programming and deploying satellite tags on phocid seals. He has also developed various workflows for the management of telemetry data in R. Dr. Johnson is a leading biomatrician with expertise in the analysis of animal movement. Dr. Johnson is the lead author and developer of the R package <code>crawl</code>.</p>
 </div>
 <div id="preface" class="section level2 unnumbered">
 <h2>Preface</h2>
-<p>This book is being developed simultaneously with a 3-day workshop on the use of the <code>crawl</code> package for analysis of animal movment in R. Significant components of this book, example code, and content will change. Please use code and examples with caution and contact the authors before relying on advice, code, or examples for real-world analysis.</p>
+<p>This book is being developed simultaneously with a 3-day workshop on the use of the <code>crawl</code> package for analysis of animal movment in R. Significant components of this book, example code, and content will change. Please use code and examples with caution and contact the authors before relying on advice, code, or examples for real-world analysis. Identification of errors is encouraged and folks should open an <a href="https://github.com/jmlondon/crawl-workshop/issues">issue via the GitHub repository</a>. We will also accept pull requests for any bug fixes or enhancements.</p>
+<p>A significant portion of this book is devoted to the support of the R package <code>crawl</code>. The package is available on <a href="https://cran.r-project.org/package=crawl">CRAN</a> as well as <a href="https://github.com/NMML/crawl">GitHub</a>.</p>
+<p>If you are using <code>crawl</code> as part of a publication, please refer to the output from <code>citation('crawl')</code> for an appropriate citation. One should also consider referencing the original <em>Ecology</em> paper from 2008.</p>
+<blockquote>
+<p>Johnson, D. S., London, J. M., Lea, M.-A. and Durban, J. W. (2008), CONTINUOUS-TIME CORRELATED RANDOM WALK MODEL FOR ANIMAL TELEMETRY DATA. Ecology, 89: 1208–1215. <a href="doi:10.1890/07-1032.1" class="uri">doi:10.1890/07-1032.1</a></p>
+</blockquote>
 <div id="disclaimer" class="section level5 unnumbered">
 <h5>Disclaimer</h5>
 <p><sub>This book is a scientific product and is not official communication of the Alaska Fisheries Science Center, the National Oceanic and Atmospheric Administration, or the United States Department of Commerce. All AFSC Marine Mammal Laboratory (AFSC-MML) GitHub project code is provided on an ‘as is’ basis and the user assumes responsibility for its use. AFSC-MML has relinquished control of the information and no longer has responsibility to protect the integrity, confidentiality, or availability of the information. Any claims against the Department of Commerce or Department of Commerce bureaus stemming from the use of this GitHub project will be governed by all applicable Federal law. Any reference to specific commercial products, processes, or services by service mark, trademark, manufacturer, or otherwise, does not constitute or imply their endorsement, recommendation or favoring by the Department of Commerce. The Department of Commerce seal and logo, or the seal and logo of a DOC bureau, shall not be used in any manner to imply endorsement of any commercial product or activity by DOC or the United States Government.</sub></p>
