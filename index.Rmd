@@ -22,7 +22,7 @@ Drs. Josh M. London and Devin S. Johnson are researchers at the NOAA Alaska Fish
 Science Center's Marine Mammal Laboratory in Seattle, Washington. Dr. London has over
 10 years of experience programming and deploying satellite tags on phocid seals. 
 He has also developed various workflows for the management of telemetry data in R. 
-Dr. Johnson is a leading biomatrician with expertise in the analysis of animal
+Dr. Johnson is a leading biometrician with expertise in the analysis of animal
 movement. Dr. Johnson is the lead author and developer of the R package `crawl`.
 
 ## Preface {-}
