@@ -121,6 +121,8 @@ and structure consistent over time. This affords end users the ability to develo
 custom processing scripts without much fear the formats will change and break
 their scripts.
 
+### Read In CSV Source Data
+
 Here we will demonstrate the development of such a script using data downloaded
 from the Wildlife Computers data portal. All data are grouped by deployment and
 presented in various comma-separated files. The `*-Locations.csv` contains all
@@ -202,6 +204,11 @@ tbl_locs <- dir('examples/data/',
     full.names = TRUE) %>% 
   purrr::map(read_csv,col_types = my_cols) %>% 
   dplyr::bind_rows()
+
+tbl_locs %>% group_by(DeployID) %>% 
+  summarise(num_locs = n(),
+            start_date = min(Date),
+            end_date = max(Date))
 ```
 
 ## Tidy Data for Telemetry
