@@ -16,14 +16,6 @@ providing the user with suggested principles, workflows, and pragmatic
 approaches that, if followed, should make analysis with `crawl` more
 efficient and reliable.
 
-As with anything in science and R, there are a number of right ways to 
-approach a problem. The workflows and principles outline here aren't the only
-way to use `crawl`. However, this content has been developed after years of
-working with researchers and troubleshooting common issues. For most users,
-following this guide will prove a successful endeavor. More advanced users
-or those with specific needs should feel free to refer to this as a starting
-point but then expand to meet their need.
-
 This content is broken up in the following sections:
 
 1. Analysis and Coding Principles
@@ -39,15 +31,77 @@ This content is broken up in the following sections:
 
 ## Analysis and Coding Principles
 
+As with anything in science and R, there are a number of right ways to 
+approach a problem. The workflows and principles outline here aren't the only
+way to use `crawl`. However, this content has been developed after years of
+working with researchers and troubleshooting common issues. For most users,
+following this guide will prove a successful endeavor. More advanced users
+or those with specific needs should feel free to refer to this as a starting
+point but then expand to meet their need.
+
 ### Source Data are Read Only
+
+Source data should not be edited. In many cases, the financial and personal
+investment required to acquire these data is significant. In addition, the
+unique timing, location, and nature of the data cannot be replicated so every
+effort should be employed to preserve the integrity of source data as they
+were collected. All efforts should be made to also insure that source data
+are stored in plain text or well described open formats. This approach provides
+researchers confidence that data will be available and usable well into the
+future.
 
 ### Script Everything
 
+In all likelihood, the format of any source data will not be condusive to 
+established analytical procedures. For example, `crawl` cannot accept a raw
+data file downloaded from ArgosWeb or the Wildlife Computers Data Portal. Some
+amount of data carpentry is required. Keeping with the principles of
+reproducibility, all data assembly and carpentry should be scripted. Here, we
+rely on the R programming language for our scripts, but Python or other
+similar languages will also meet this need. 
+
 ### Document Along the Way
+
+Scripting the data assembly should be combined with an effort to properly
+document the process. Documentation is an important component of reproducibility
+and, if done as part of the scritping and development process, provides an
+easier workflow for publishing results and data to journals and repositories.
+The `rmarkdown`, `bookdown`, and `knitr` packages provide an excellent framework for 
+combining your R scripts with documentation. This entire book is written with
+`bookdown` and `knitr`.
 
 ### Embrace the Tidyverse
 
+The _tidyverse_ describes a set of R packages developed by, or in association
+with, Hadley Wickham. Tidy data principles are outlined in a 2014 
+[paper](http://dx.doi.org/10.18637/jss.v059.i10) published in the 
+_Journal of Statistical Software_. The key tennants of tidy data are:
+
+1. Each variable forms a column.
+2. Each observation forms a row.
+3. Each type of observational unit forms a table.
+
+Location data from telemetry deployments often follows this type of structure:
+each location estimate is a row and the columns all represent variable
+attributes associated with that location. Additionally, the location data
+are usually organized into a single table. Behavior data, however, often
+comes in a less structured format. Different behavior type data are sometimes
+mixed within a single table and column headings do not consistently describe
+the same variable (e.g. _Bin1_, _Bin2_, etc). There are valid reasons for
+tag vendors and data providers to transmit the source data in this way, but the
+structure is not condusive to analysis.
+
+The `tidyverse` package is a wrapper for a number of separate packages that each
+contribute to the tidy'ing of data. The `tidyr`, `dplyr`, `readr`, and `purrr`
+packages are key components. In addition, the `lubridate` package (not included
+in the `tidyverse` package) is especially useful for consistent maninpulation
+of date-time values.
+
 ### Anticipate Errors & Trap Them
+
+Use R's error trapping functions (`try()` and `tryCatch()`) in areas of your
+code where you anticipate parsing errors or potential issues with convergence
+or fit. The `purrr::safely()` function also provides a great service.
 
 ## Assembling Source Data
 
@@ -409,8 +463,7 @@ library(viridis)
 library(ggthemes)
 p <- tbl_percent %>% 
   dplyr::mutate(solar_hour = date_hour + lubridate::dhours(11.5),
-                solar_hour = lubridate::hour(solar_hour),
-                deployid = factor(deployid)) %>% 
+                solar_hour = lubridate::hour(solar_hour)) %>% 
   ggplot(aes(x = lubridate::date(date_hour), 
                            y = solar_hour,
                            fill = percent_dry)) +
