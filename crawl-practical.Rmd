@@ -420,6 +420,7 @@ plot will rely on the `leaflet` package to create an interactive plot of the
 
 ```{r}
 library(leaflet)
+library(leaflet.extras)
 library(sf)
 ```
 
@@ -450,7 +451,8 @@ m <- leaflet(data = sf_locs) %>%
                    color = ~pal(deployid)) %>% 
   addLegend(pal = pal,values = ~deployid,labels = ~deployid) %>% 
   addMiniMap(tiles = providers$Esri.OceanBasemap,
-             toggleDisplay = T)
+             toggleDisplay = T) %>% 
+  suspendScroll()
 
 m
 ```
