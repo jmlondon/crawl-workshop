@@ -533,6 +533,11 @@ to remove these obviously wrong locations. A typical speed filter might use a
 value of 2.5 m/s as a biologically reasonable value for pinnipeds. For this
 application, we will use 7.5 m/s and rely on the `argosfilter` package.
 
+The example code below follows a typical split-apply-combine approach using
+functions from the `dplyr`, `tidyr`, and `purrr` packages. To better 
+understand what each step is doing, we suggest you step through the process and
+examine the results at point.
+
 ```{r}
 
 speed_filt <- function(x) {
@@ -570,10 +575,28 @@ The `crawl::crwMLE()` can accept either a _SpatialPointsDataFrame_ from the
 focus on the `sf` package.
 
 ```{r}
-sf_locs <- st_as_sf(tbl_locs, coords = c("longitude","latitude")) %>% 
-  st_set_crs("+init=epsg:4326")
+sf_locs <- sf::st_as_sf(tbl_locs, coords = c("longitude","latitude")) %>% 
+  sf::st_set_crs(4326)
 ```
 
+Earlier versions of `crawl` allowed users to pass geographic coordinates (e.g.
+latitude, longitude). However, relying on geographic coordinates presents some
+problems (e.g. crossing 180 or 0) and requires some assumptions to convert
+decimal degrees into meters --- the units for the provided error ellipses. 
+Because of these issues, all data should be provided to the `crawl::crwMLE()`
+as projected coordinates in meter units. Which projection users choose is 
+dependent upon their study area. For these data, we will go with the _North Pole 
+LAEA Bering Sea_ projection. This projection is often abbreciated by the EPSG
+code of 3571.
+
+The `sf::transform()` function provides an easy method for transforming our
+coordinates
+
+```{r}
+sf_locs <- sf::st_transform(sf_locs, 3571)
+
+sf::st_geometry(sf_locs)
+```
 
 ## Determining Your Model Parameters
 
