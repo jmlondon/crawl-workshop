@@ -158,6 +158,8 @@ path_to_file <- "examples/data/160941-Locations.csv"
 tbl_locs <- readr::read_csv(path_to_file)
 ```
 
+### Specify Column Data Types
+
 The `readr::read_csv()` function tries to interpret the proper data types for 
 each of the columns and provides us the column specifications it determined. In
 most cases, the function gets this correct. However, if we examine the `cols()`
@@ -194,6 +196,8 @@ my_cols <- cols(
 tbl_locs <- readr::read_csv(path_to_file,col_types = my_cols)
 ```
 
+### Import From Many Files
+
 In most instances you'll likely want to read in data from multiple deployments.
 The `purrr::map()` function can be combined with `readr::read_csv()` and
 `dplyr::bind_rows()` make this easy.
@@ -218,6 +222,8 @@ location data, regardless of the data source, this is typical of the source data
 structure. Each line in a file usually represents a single location estimate at
 a specific time. So, there's very little we need to do in order to get our
 `tbl_locs` into an acceptable structure.
+
+### Standard Column Names
 
 One thing we can do, is to adjust the column names so there are no spaces or
 hyphens. We can also drop everything to lower-case to avoid typos. To do this
@@ -248,6 +254,8 @@ ready for input into the `crawl::crwMLE()` function. The `*-Histos.csv` file,
 however, has a messy, horizontal structure and will require some tidying. The
 `tidyr` package has a number of options that will help us. But, first let's look
 closer at the structure of a typical `*-Histos.csv`.
+
+### Tidy a Messy 'Histos' File
 
 Wildlife Computers provides a variety of data types within this file structure.
 Because the details of each data type are subject to tag programming details, the
@@ -335,6 +343,8 @@ tbl_percent <- dir('examples/data/',
 
 ```
 
+### Gathering Data with `tidyr`
+
 Now that our percent timeline data are in R, we can work to tidy the data 
 structure using the `tidyr::gather()` function. This function requires that we
 provide character names for the _key_ and _value_ columns to create. We then
@@ -371,6 +381,8 @@ in line with tidy principles
 ```{r}
 tbl_percent
 ```
+
+### Visualizing Source Data
 
 To further explore our imported data and confirm there aren't any remaining
 issues to address, we can create visual representations of the data. The first
@@ -444,6 +456,124 @@ p
 ```
 
 ## Preparing Input Data for `crawl`
+
+At this point, the `tbl_locs` object represents the minimal source data 
+required to fit `crawl::crwMLE()`. In addition to including location estimates
+in the model fit, one can also include an _activity_ parameter. For harbor seals, 
+we can rely on the percent-timeline data as an indicator of activity --- when
+the tags are dry for most of an hour, the seal is likely hauled out and not 
+moving. The `crawl::crwMLE()` will interpret this as an indication that the
+auto-correlation parameter should go to zero.
+
+In this section, we will prepare two input objects for `crawl::crwMLE()`. The
+first will be a spatial object of location estimates that can be passed
+directly. The second, will be a data.frame that represents a merge between the
+location estimates and percent-timeline data.
+
+### Error Parameters for GPS Data
+
+Many tags deployed on marine animals now include the option to collect GPS
+quality location esimates in addition to Argos. `crawl::crwMLE()` relies on the
+ellipse error parameters provide by Argos, so we need to fill in the GPS
+locations with appropriate values. GPS locations from these tags are generally
+expected to have an error radius of ~50m as long as the number of satellites
+used for the estimate is greater than 4. Below, we will use the `dplyr::mutate()`
+function to fill in these values. While we are at it, we will also remove any
+_Argos_ records that do not have associated error ellipse values.
+
+```{r}
+tbl_locs <- tbl_locs %>%
+  dplyr::filter(!(is.na(error_radius) & type == 'Argos')) %>%
+  dplyr::mutate(
+    error_semi_major_axis = ifelse(type == 'FastGPS', 50,
+                                   error_semi_major_axis),
+    error_semi_minor_axis = ifelse(type == 'FastGPS', 50,
+                                   error_semi_minor_axis),
+    error_ellipse_orientation = ifelse(type == 'FastGPS', 0,
+                                       error_ellipse_orientation)
+    )
+```
+
+### Known Locations
+
+In many cases, researchers are also knowledgable of the time and location
+coordinates of animal release. The Wildlife Computers Data Portal allows this
+to be entered and is included as a _User_ record. The error radius one might
+specify for this record is dependent on the release situation. In general,
+it is best to over estimate this error radius. This record should be the first
+location record in the dataset passed to `crawl::crwMLE()`.
+
+```{r}
+tbl_locs <- tbl_locs %>%
+  dplyr::mutate(
+    error_semi_major_axis = ifelse(type == 'User', 500,
+                                   error_semi_major_axis),
+    error_semi_minor_axis = ifelse(type == 'User', 500,
+                                   error_semi_minor_axis),
+    error_ellipse_orientation = ifelse(type == 'User', 0,
+                                       error_ellipse_orientation)
+    )
+
+user_dt <- tbl_locs %>% dplyr::rename(release_dt = date_time) %>% 
+  dplyr::filter(type == 'User') %>% select(deployid,release_dt)
+
+tbl_locs <- tbl_locs %>% left_join(user_dt, by = 'deployid') %>% 
+  filter(date_time >= release_dt) %>% select(-release_dt)
+
+tbl_locs %>% group_by(deployid) %>% do(head(.,1))
+```
+
+### Course Speed Filter
+
+This step is optional, but it is very common for Argos data to include obviously
+wrong locations (locations that are 100s of kilometers away from the study area).
+Including such obviously wrong locations in the analysis can result in unexpected
+issues or problems fitting. For this reason, we recommend a course speed filter
+to remove these obviously wrong locations. A typical speed filter might use a
+value of 2.5 m/s as a biologically reasonable value for pinnipeds. For this
+application, we will use 7.5 m/s and rely on the `argosfilter` package.
+
+```{r}
+
+speed_filt <- function(x) {
+  argosfilter::sdafilter(
+    lat = x$latitude,
+    lon = x$longitude,
+    dtime = x$date_time,
+    lc = x$quality,
+    vmax = 7.5
+  )
+}
+
+tbl_locs <- tbl_locs %>% 
+  dplyr::group_by(deployid) %>% nest() %>% 
+  dplyr::mutate(filtered = purrr::map(data, speed_filt)) %>% 
+  tidyr::unnest() %>% 
+  dplyr::filter(filtered %in% c("not", "end location")) %>% 
+  dplyr::select(-filtered) %>% 
+  dplyr::arrange(deployid,date_time)
+
+
+```
+
+### Create a Spatial Object
+
+There are now two package frameworks within R for describing spatial data: `sp`
+and `sf`. The `sp` package has been the defacto standard for spatial data in R
+and has widespread support in a number of additional packages. The `sf` package
+is new and still in active development. However, the `sf` package is based on
+the more open _simple features_ standard for spatial data. For this reason, and
+others, many in the R community feel `sf` is the future of spatial data in R.
+
+The `crawl::crwMLE()` can accept either a _SpatialPointsDataFrame_ from the
+`sp` package or an _sf_ data.frame of _POINT_ geometry types. Here, we will
+focus on the `sf` package.
+
+```{r}
+sf_locs <- st_as_sf(tbl_locs, coords = c("longitude","latitude")) %>% 
+  st_set_crs("+init=epsg:4326")
+```
+
 
 ## Determining Your Model Parameters
 
