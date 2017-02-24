@@ -397,12 +397,11 @@ library(sf)
 
 ```{r}
 sf_locs <- st_as_sf(tbl_locs, coords = c("longitude","latitude")) %>% 
-  st_set_crs("+init=epsg:4326") %>% 
-  dplyr::mutate(id = ifelse(deployid == unique(deployid)[1], 1, 2))
+  st_set_crs("+init=epsg:4326")
 
 sf_lines <- sf_locs %>%
   st_geometry() %>% 
-  st_cast("MULTIPOINT",ids = sf_locs$id) %>% 
+  st_cast("MULTIPOINT",ids = as.integer(as.factor(sf_locs$deployid))) %>% 
   st_cast("MULTILINESTRING") %>% 
   st_sf(deployid = as.factor(unique(sf_locs$deployid)))
 ```
@@ -634,17 +633,31 @@ parameter, there's bit more work to do.
 ### Merging with Activity Data
 
 Since our _activity_ data represent hourly records, we need to create a 
-`date_hour` field within `tbl_locs` as the basis for our join.
+`date_hour` field within `tbl_locs` as the basis for our join. While we are at
+it, we'll translate the simple feature geometry
+for our point coordinates into an `x` and `y` column (note the use of a local
+function `sfc_as_cols()` to facilitate this).
 
 ```{r}
+sfc_as_cols <- function(x, names = c("x","y")) {
+  stopifnot(inherits(x,"sf") && inherits(sf::st_geometry(x),"sfc_POINT"))
+  ret <- do.call(rbind,sf::st_geometry(x))
+  ret <- tibble::as_tibble(ret)
+  stopifnot(length(names) == ncol(ret))
+  ret <- setNames(ret,names)
+  dplyr::bind_cols(x,ret)
+}
+
 sf_locs <- sf_locs %>% 
   mutate(date_hour = lubridate::floor_date(date_time,'hour')) %>% 
-  arrange(deployid, date_time)
+  arrange(deployid, date_time) %>% 
+  sfc_as_cols()
 ```
 
 We also need to make sure our _activity_ data includes all possible hours during
 the deployment. There are often missing days where the percent-timeline data
-was not transmitted back and so are not included in the source data. This will 
+was not transmitted back and so are not included in the source data. We rely on
+the `tidyr::complete()` function to expand our `date_hour` field. This will 
 results in `NA` values for `percent_dry`. We will set these values to _33_ 
 because it will allow some level of correlated movement during these missing
 periods. Another option would be to use the `zoo::na_locf()` function to carry
@@ -668,7 +681,7 @@ trim_deployment <- function(x) {
                         max(date_time,na.rm = TRUE)))
 }
 
-sf_locs_activity <- tbl_percent %>% 
+tbl_locs_activity <- tbl_percent %>% 
   dplyr::left_join(sf_locs, by = c("deployid","date_hour")) %>% 
   dplyr::group_by(deployid) %>% 
   tidyr::nest() %>% 
@@ -679,29 +692,12 @@ sf_locs_activity <- tbl_percent %>%
   dplyr::arrange(deployid,date_time) 
 ```
 
-The last step we need to complete is to translate the simple feature geometry
-for our point coordinates into an `x` and `y` column.
-
-```{r}
-coords <- sf_locs_activity$geometry %>% map(unlist)
-
-coords_df <- list()
-
-for (i in 1:length(coords)) {
-  coords_df[[i]] <- data.frame(x = ifelse(!is.null(coords[[i]]),
-                                               coords[[i]][,1],
-                                               NA),
-                               y = ifelse(!is.null(coords[[i]]),
-                                               coords[[i]][,2],
-                                               NA))
-}
-
-sf_locs_activity <- sf_locs_activity %>% 
-  bind_cols(bind_rows(coords_df))
-
-```
 
 ## Determining Your Model Parameters
+
+We now have two objects: `sf_locs`
+
+## Fitting with `crawl::crwMLE()`
 
 ## Exploring and Troubleshooting Model Results
 
