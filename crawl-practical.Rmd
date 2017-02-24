@@ -551,13 +551,41 @@ speed_filt <- function(x) {
 }
 
 tbl_locs <- tbl_locs %>% 
-  dplyr::group_by(deployid) %>% nest() %>% 
+  dplyr::group_by(deployid) %>% tidyr::nest() %>% 
   dplyr::mutate(filtered = purrr::map(data, speed_filt)) %>% 
   tidyr::unnest() %>% 
   dplyr::filter(filtered %in% c("not", "end location")) %>% 
   dplyr::select(-filtered) %>% 
   dplyr::arrange(deployid,date_time)
 
+
+```
+
+### Duplicate Times
+
+Argos data often contain near duplicate records. These are identified by location
+estimates with the same date-time but differing coordinate or error values. In
+theory, `crawl::crwMLE()` can handle these situations, but we have found it is
+more reliable to _fix_ these records. The first option for _fixing_ the records
+would be to eliminate one of the duplicate records. However, it is often not
+possible to reliably identify which record is more appropriate to discard. For
+this reason, we advocate adjusting the date-time value for one of the records and
+increasing the value by 1 second. To facilitate this, we will rely on the 
+`xts::make.time.unique()` function.
+
+```{r}
+make_unique <- function(x) {
+  xts::make.time.unique(x$date_time,eps = 1)
+}
+
+library(xts)
+
+tbl_locs <- tbl_locs %>% 
+  dplyr::arrange(deployid,date_time) %>% 
+  dplyr::group_by(deployid) %>% tidyr::nest() %>% 
+  dplyr::mutate(unique_time = purrr::map(data, make_unique)) %>% 
+  tidyr::unnest() %>% 
+  dplyr::select(-date_time) %>% rename(date_time = unique_time)
 
 ```
 
@@ -576,7 +604,7 @@ focus on the `sf` package.
 
 ```{r}
 sf_locs <- sf::st_as_sf(tbl_locs, coords = c("longitude","latitude")) %>% 
-  sf::st_set_crs(4326)
+  sf::st_set_crs(.,4326)
 ```
 
 Earlier versions of `crawl` allowed users to pass geographic coordinates (e.g.
@@ -590,12 +618,87 @@ LAEA Bering Sea_ projection. This projection is often abbreciated by the EPSG
 code of 3571.
 
 The `sf::transform()` function provides an easy method for transforming our
-coordinates
+coordinates. After, we can examine the geometry and confirm our coordinate
+units are in meters.
 
 ```{r}
 sf_locs <- sf::st_transform(sf_locs, 3571)
 
 sf::st_geometry(sf_locs)
+```
+
+At this point, `sf_locs` is a valid format for input to `crawl::crwMLE()`. 
+However, if you want to include the percent-timeline data as an _activity_
+parameter, there's bit more work to do.
+
+### Merging with Activity Data
+
+Since our _activity_ data represent hourly records, we need to create a 
+`date_hour` field within `tbl_locs` as the basis for our join.
+
+```{r}
+sf_locs <- sf_locs %>% 
+  mutate(date_hour = lubridate::floor_date(date_time,'hour')) %>% 
+  arrange(deployid, date_time)
+```
+
+We also need to make sure our _activity_ data includes all possible hours during
+the deployment. There are often missing days where the percent-timeline data
+was not transmitted back and so are not included in the source data. This will 
+results in `NA` values for `percent_dry`. We will set these values to _33_ 
+because it will allow some level of correlated movement during these missing
+periods. Another option would be to use the `zoo::na_locf()` function to carry
+the last ovserved value forward.
+
+```{r}
+tbl_percent <- tbl_percent %>% 
+  group_by(deployid) %>% 
+  tidyr::complete(date_hour = full_seq(date_hour, 3600L)) %>% 
+  dplyr::mutate(percent_dry = ifelse(is.na(percent_dry), 33, percent_dry))
+```
+
+In addition to joining these two tables together, we also need to make sure
+the _activity_ data doesn't extend beyond the range of date-time values for
+observed locations.
+
+```{r}
+trim_deployment <- function(x) {
+  dplyr::filter(x, between(date_hour,
+                        lubridate::floor_date(min(date_time,na.rm = TRUE),'hour'),
+                        max(date_time,na.rm = TRUE)))
+}
+
+sf_locs_activity <- tbl_percent %>% 
+  dplyr::left_join(sf_locs, by = c("deployid","date_hour")) %>% 
+  dplyr::group_by(deployid) %>% 
+  tidyr::nest() %>% 
+  dplyr::mutate(data = purrr::map(data,trim_deployment)) %>% 
+  unnest() %>% 
+  dplyr::mutate(date_time = ifelse(is.na(date_time),date_hour,date_time),
+                date_time = lubridate::as_datetime(date_time)) %>% 
+  dplyr::arrange(deployid,date_time) 
+```
+
+The last step we need to complete is to translate the simple feature geometry
+for our point coordinates into an `x` and `y` column.
+
+```{r}
+coords <- sf_locs_activity$geometry %>% map(unlist)
+
+coords_df <- list()
+
+for (i in 1:length(coords)) {
+  coords_df[[i]] <- data.frame(x = ifelse(!is.null(coords[[i]]),
+                                               coords[[i]][,1],
+                                               NA),
+                               y = ifelse(!is.null(coords[[i]]),
+                                               coords[[i]][,2],
+                                               NA))
+}
+
+sf_locs_activity <- sf_locs_activity %>% 
+  bind_cols(bind_rows(coords_df))
+
 ```
 
 ## Determining Your Model Parameters
