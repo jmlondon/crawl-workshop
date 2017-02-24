@@ -435,7 +435,6 @@ two satellite tags deployed on harbor seals in the Aleutian Islands.
 
 ```{r, timeline-heatmaps, out.width = '100%', fig.cap = '(ref:percent-timeline-heatmap)'}
 library(viridis)
-library(ggthemes)
 p <- tbl_percent %>% 
   dplyr::mutate(solar_hour = date_hour + lubridate::dhours(11.5),
                 solar_hour = lubridate::hour(solar_hour)) %>% 
@@ -504,6 +503,13 @@ to be entered and is included as a _User_ record. The error radius one might
 specify for this record is dependent on the release situation. In general,
 it is best to over estimate this error radius. This record should be the first
 location record in the dataset passed to `crawl::crwMLE()`.
+
+Some researchers may also have additional date-times during the deployment
+when the location is known (e.g. fur seals returning to a rookery between trips).
+In these cases, `tbl_locs` can be augmented with additional _User_ locations, but
+the code example below will need to be customized for each situation. This code
+example presumes there is just one _User_ location and that corresponds to the
+release/deployment start.
 
 ```{r}
 tbl_locs <- tbl_locs %>%
