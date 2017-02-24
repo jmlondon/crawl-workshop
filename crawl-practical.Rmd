@@ -148,6 +148,7 @@ to make reading and processing these files easier and more reliable.
 library(tidyverse)
 library(purrr)
 library(lubridate)
+if(!require(devtools)) install.packages('devtools')
 ```
 
 The `readr` includes the `read_csv()` function which we will rely on to read
@@ -391,7 +392,9 @@ plot will rely on the `leaflet` package to create an interactive plot of the
 
 ```{r}
 library(leaflet)
-library(leaflet.extras)
+if (!require(leaflet.extras)) devtools::install_github('bhaskarvk/leaflet.extras')
+library(leaflet.extras) 
+library(ggthemes)
 library(sf)
 ```
 
