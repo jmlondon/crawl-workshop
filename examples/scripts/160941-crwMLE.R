@@ -9,8 +9,7 @@ crawl_input <- readRDS('input_tbl.rds')
 
 obsData <- crawl_input %>% 
   dplyr::mutate(percent_dry = 1 - percent_dry/100) %>%
-  dplyr::rename(activity = percent_dry,
-                date_time = date_time) %>%
+  dplyr::rename(activity = percent_dry) %>%
   dplyr::arrange(deployid, date_hour, date_time)
 
 diag_data = model.matrix(
@@ -65,8 +64,7 @@ fit <- crawl::crwMLE(
 
 
 if (inherits(fit,"try-error") || any(is.nan(fit$se))) {
-  message(paste("I had issues. going full Brownian"))
-  fixPar = c(1, 1, NA, 4, 0)
+  fixPar = c(1, 1, NA, 4)
   
   obsData <- obsData %>% 
     dplyr::arrange(deployid, date_hour, date_time)
@@ -74,7 +72,6 @@ if (inherits(fit,"try-error") || any(is.nan(fit$se))) {
   fit <- crawl::crwMLE(
     #crawl::displayPar(
     mov.model =  ~ 1,
-    activity = ~ I(activity),
     err.model = list(
       x =  ~ ln.sd.x - 1,
       y =  ~ ln.sd.y - 1,

@@ -125,7 +125,8 @@ input_tbl <- tbl160941_histos %>%
                         lubridate::floor_date(min(date_time,na.rm=TRUE),'hour'),
                         max(date_time,na.rm=TRUE))) %>% 
   dplyr::bind_rows(release_data) %>% 
-  dplyr::mutate(date_time = ifelse(is.na(date_time),date_hour,date_time)) %>% 
+  dplyr::mutate(date_time = ifelse(is.na(date_time),date_hour,date_time),
+                date_time = lubridate::as_datetime(date_time)) %>% 
   dplyr::arrange(deployid,date_time)
 
 head(input_tbl)
