@@ -373,6 +373,9 @@ tbl_percent <- tbl_percent %>%
   dplyr::rename(date_hour = date) %>% 
   dplyr::mutate(date_hour = date_hour + lubridate::hours(hour)) %>% 
   dplyr::select(deployid,date_hour,percent_dry) %>%
+  group_by(deployid, date_hour) %>% 
+  summarize(percent_dry = mean(percent_dry)) %>% 
+  ungroup() %>% 
   dplyr::arrange(deployid,date_hour)
 ```
 
@@ -528,7 +531,36 @@ user_dt <- tbl_locs %>% dplyr::rename(release_dt = date_time) %>%
 tbl_locs <- tbl_locs %>% left_join(user_dt, by = 'deployid') %>% 
   filter(date_time >= release_dt) %>% select(-release_dt)
 
-tbl_locs %>% group_by(deployid) %>% do(head(.,1))
+tbl_locs %>% group_by(deployid) %>% select(deployid,date_time,type) %>% 
+  do(head(.,1))
+```
+
+### Duplicate Times
+
+Argos data often contain near duplicate records. These are identified by location
+estimates with the same date-time but differing coordinate or error values. In
+theory, `crawl::crwMLE()` can handle these situations, but we have found it is
+more reliable to _fix_ these records. The first option for _fixing_ the records
+would be to eliminate one of the duplicate records. However, it is often not
+possible to reliably identify which record is more appropriate to discard. For
+this reason, we advocate adjusting the date-time value for one of the records and
+increasing the value by 1 second. To facilitate this, we will rely on the 
+`xts::make.time.unique()` function.
+
+```{r}
+make_unique <- function(x) {
+  xts::make.time.unique(x$date_time,eps = 1)
+}
+
+library(xts)
+
+tbl_locs <- tbl_locs %>% 
+  dplyr::arrange(deployid,date_time) %>% 
+  dplyr::group_by(deployid) %>% tidyr::nest() %>% 
+  dplyr::mutate(unique_time = purrr::map(data, make_unique)) %>% 
+  tidyr::unnest() %>% 
+  dplyr::select(-date_time) %>% rename(date_time = unique_time)
+
 ```
 
 ### Course Speed Filter
@@ -562,40 +594,12 @@ tbl_locs <- tbl_locs %>%
   dplyr::group_by(deployid) %>% tidyr::nest() %>% 
   dplyr::mutate(filtered = purrr::map(data, speed_filt)) %>% 
   tidyr::unnest() %>% 
-  dplyr::filter(filtered %in% c("not", "end location")) %>% 
+  dplyr::filter(filtered %in% c("not", "end_location")) %>% 
   dplyr::select(-filtered) %>% 
   dplyr::arrange(deployid,date_time)
 
-
 ```
 
-### Duplicate Times
-
-Argos data often contain near duplicate records. These are identified by location
-estimates with the same date-time but differing coordinate or error values. In
-theory, `crawl::crwMLE()` can handle these situations, but we have found it is
-more reliable to _fix_ these records. The first option for _fixing_ the records
-would be to eliminate one of the duplicate records. However, it is often not
-possible to reliably identify which record is more appropriate to discard. For
-this reason, we advocate adjusting the date-time value for one of the records and
-increasing the value by 1 second. To facilitate this, we will rely on the 
-`xts::make.time.unique()` function.
-
-```{r}
-make_unique <- function(x) {
-  xts::make.time.unique(x$date_time,eps = 1)
-}
-
-library(xts)
-
-tbl_locs <- tbl_locs %>% 
-  dplyr::arrange(deployid,date_time) %>% 
-  dplyr::group_by(deployid) %>% tidyr::nest() %>% 
-  dplyr::mutate(unique_time = purrr::map(data, make_unique)) %>% 
-  tidyr::unnest() %>% 
-  dplyr::select(-date_time) %>% rename(date_time = unique_time)
-
-```
 
 ### Create a Spatial Object
 
@@ -676,7 +680,7 @@ the last ovserved value forward.
 tbl_percent <- tbl_percent %>% 
   group_by(deployid) %>% 
   tidyr::complete(date_hour = full_seq(date_hour, 3600L)) %>% 
-  dplyr::mutate(percent_dry = ifelse(is.na(percent_dry), 33, percent_dry))
+  dplyr::mutate(percent_dry = ifelse(is.na(percent_dry), 33, percent_dry)) 
 ```
 
 In addition to joining these two tables together, we also need to make sure
@@ -692,25 +696,230 @@ trim_deployment <- function(x) {
 
 tbl_locs_activity <- tbl_percent %>% 
   dplyr::left_join(sf_locs, by = c("deployid","date_hour")) %>% 
+  dplyr::mutate(activity = 1 - percent_dry/100) %>% 
   dplyr::group_by(deployid) %>% 
   tidyr::nest() %>% 
   dplyr::mutate(data = purrr::map(data,trim_deployment)) %>% 
   unnest() %>% 
   dplyr::mutate(date_time = ifelse(is.na(date_time),date_hour,date_time),
                 date_time = lubridate::as_datetime(date_time)) %>% 
+  dplyr::select(-geometry) %>% 
   dplyr::arrange(deployid,date_time) 
 ```
 
 
 ## Determining Your Model Parameters
 
-We now have two objects: `sf_locs`
+### Create a Nested Data Structure
+
+We now have two objects: `sf_locs` and `tbl_locs_activity`. The first step is
+to_nest_ each of our objects by `deployid` so we can take advantage of list 
+columns when fitting multiple deployments at once. We will group by `deployid` 
+and then call `tidyr::nest()`. For `sf_locs` we need to convert back into an 
+`sf` object after the group by and nesting.
+
+```{r}
+sf_locs <- sf_locs %>% 
+  dplyr::group_by(deployid) %>% dplyr::arrange(date_time) %>% 
+  tidyr::nest() %>% 
+  dplyr::mutate(data = purrr::map(data,sf::st_as_sf))
+
+tbl_locs_activity <- tbl_locs_activity %>% 
+  dplyr::group_by(deployid) %>% dplyr::arrange(date_time) %>% 
+  tidyr::nest() 
+```
+
+### Create model.matrix for Ellipse Errors
+
+The data in this example are from recent Argos deployments and, thus, include
+error ellipse information determined from the Kalman filter processing that
+has been available since 2011. This ellipse information provides a 
+significant improvement to modeling animal movement because it provides
+specific information on the error associated with each location estimate. The
+`ellipse_matrix()` function translates the error ellipse information provided
+by Argos into a model matrix structure that `crawl::crwMLE()` can utilize. The
+`crawl::argosDiag2Cov()` function further transforms this information back
+into the original data frame structure which we can then bind back into
+our data.
+
+```{r}
+ellipse_matrix <- function(x) {
+  if (inherits(x, "sf")) {
+    sf::st_geometry(x) <- NULL
+  }
+  ret <- model.matrix(
+    ~ error_semi_major_axis + error_semi_minor_axis +
+      error_ellipse_orientation,
+    model.frame(~ .,x,na.action = na.pass))[,-1]
+  ret
+}
+
+sf_locs <- sf_locs %>% 
+  dplyr::mutate(diag = purrr::map(data, ellipse_matrix),
+         diag = purrr::map(diag, ~ crawl::argosDiag2Cov(
+                          .x[,1], .x[,2], .x[,3])),
+         data = purrr::map2(data,diag,bind_cols)
+  ) %>% 
+  dplyr::select(-diag)
+
+tbl_locs_activity <- tbl_locs_activity %>% 
+  dplyr::mutate(diag = purrr::map(data, ellipse_matrix),
+         diag = purrr::map(diag, ~ crawl::argosDiag2Cov(
+                          .x[,1], .x[,2], .x[,3])),
+         data = purrr::map2(data,diag,bind_cols)
+  ) %>% 
+  dplyr::select(-diag)
+
+```
+
+### Create Model Parameters
+
+```{r}
+init_params <- function(d) {
+  ret <- list(a = c(d$x[1], 0,
+                    d$y[1], 0),
+              P = diag(c(10 ^ 2, 10 ^ 2,
+                         10 ^ 2, 10 ^ 2)))
+  ret
+} 
+
+params <- function(d) {
+  list(
+  fixpar = c(1,1,NA,NA),
+  constr = list(lower = c(-Inf, -4), upper = (c(Inf, 4))),
+  lap_prior = function(par) {
+    -abs(par[2] - 4) / 5
+  },
+  lap_prior = function(par) {
+    -abs(par[2] - 4) / 5
+  },
+  reg_prior = function(par) {
+    dt(par[2] - 3,
+       df = 1,
+       log = TRUE)
+  }
+  )
+}
+
+sf_locs <- sf_locs %>% 
+  dplyr::mutate(init = purrr::map(data,init_params),
+                fixpar = rep(
+                  list(c(1,1,NA,NA)),
+                       nrow(.)
+                  ),
+                constr = rep(list(
+                  list(lower = c(-Inf, -4), upper = (c(Inf, 4)))),
+                  nrow(.))
+                
+  )
+
+
+# sf_locs <- sf_locs %>% 
+#   dplyr::mutate(init = purrr::map(data,init_params),
+#                 params = purrr::map(data,params))
+
+tbl_locs_activity <- tbl_locs_activity %>% 
+  dplyr::mutate(init = purrr::map(data,init_params),
+                fixpar = rep(
+                  list(c(1,1,NA,NA,0)),
+                       nrow(.)
+                  ),
+                constr = rep(list(
+                  list(lower = c(-Inf, -4), upper = (c(Inf, 4)))),
+                  nrow(.))
+  )
+
+```
+
 
 ## Fitting with `crawl::crwMLE()`
+
+```{r}
+fit_crawl <- function(d, init, fixpar, constr, 
+                      tryBrownian = TRUE) {
+  
+  priors <- list(
+    NULL,
+    ln_prior = function(par) { dnorm(par[2], 4, 4, log = TRUE) },
+    lap_prior = function(par) { -abs(par[2] - 4) / 5 },
+    reg_prior = function(par) { dt(par[2] - 3, df = 1, log = TRUE) }
+  )
+  
+  for (prior in priors) {
+    fit <- crawl::crwMLE(
+      mov.model =  ~ 1,
+      if (any(colnames(d) == "activity")) {
+        activity <- ~ I(activity)
+      } else {activity <- NULL},
+      err.model = list(
+        x =  ~ ln.sd.x - 1,
+        y =  ~ ln.sd.y - 1,
+        rho =  ~ error.corr
+      ),
+      data = d,
+      Time.name = "date_time",
+      initial.state = init,
+      fixPar = fixpar,
+      prior = prior,
+      constr = constr,
+      attempts = 1,
+      control = list(
+        trace = 0
+      ),
+      initialSANN = list(
+        trace = 0
+      )
+    )
+    if (!any(is.nan(fit$se))) {
+      return(fit)
+    }
+  }
+  
+  if (any(is.nan(fit$se)) && tryBrownian) {
+    fixPar = c(1, 1, NA, 4)
+    
+    fit <- crawl::crwMLE(
+      mov.model =  ~ 1,
+      err.model = list(
+        x =  ~ ln.sd.x - 1,
+        y =  ~ ln.sd.y - 1,
+        rho =  ~ error.corr
+      ),
+      data = d,
+      Time.name = "date_time",
+      initial.state = init,
+      fixPar = fixPar,
+      attempts = 1,
+      control = list(
+        trace = 0
+      ),
+      initialSANN = list(
+        trace = 0
+      )
+    )
+  }
+  fit
+}
+
+
+tbl_locs_fit <- sf_locs %>% 
+  dplyr::mutate(fit = purrr::pmap(list(d = data,init = init,
+                                fixpar = fixpar,constr = constr),
+                           fit_crawl))
+
+tbl_locs_activity_fit <- tbl_locs_activity %>%
+  dplyr::mutate(fit = purrr::pmap(list(d = data,init = init,
+                                fixpar = fixpar,constr = constr),
+                           fit_crawl))
+
+```
+
 
 ## Exploring and Troubleshooting Model Results
 
 ## Predicting a Movement Track
+
+
 
 ## Simulating Tracks from the Posterior
 
