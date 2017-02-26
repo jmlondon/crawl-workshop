@@ -38,6 +38,14 @@ We will also accept pull requests for any bug fixes or enhancements.
 A significant portion of this book is devoted to the support of the R package
 `crawl`. The package is available on [CRAN](https://cran.r-project.org/package=crawl) as well as [GitHub](https://github.com/NMML/crawl).
 
+Many of the functions and code examples provided within this book are only 
+available within the 'devel' version of `crawl` from GitHub.
+
+```{r,eval=FALSE}
+if (!require(devtools)) install.packages('devtools')
+devtools::install_github('NMML/crawl',ref = 'devel')
+```
+
 If you are using `crawl` as part of a publication, please refer to the output from
 `citation('crawl')` for an appropriate citation. One should also consider referencing
 the original _Ecology_ paper from 2008.
