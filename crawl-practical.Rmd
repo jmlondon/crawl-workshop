@@ -904,7 +904,7 @@ tbl_locs_fit <- sf_locs %>%
                            fit_crawl),
                 params = map(fit, crawl::tidy_crwFit))
 
-tbl_locs_fit$params %>% walk(pander::pander)
+tbl_locs_fit$params %>% walk(pander::pander,caption = "crwMLE fit parameters")
 ```
 
 ```{r,results = 'asis'}
@@ -915,7 +915,7 @@ tbl_locs_activity_fit <- tbl_locs_activity %>%
                            fit_crawl),
                 params = map(fit, crawl::tidy_crwFit))
 
-tbl_locs_activity_fit$params %>% walk(pander::pander) 
+tbl_locs_activity_fit$params %>% walk(pander::pander,caption = "crwMLE fit parameters")
 
 ```
 
