@@ -426,8 +426,6 @@ m <- leaflet(data = sf_locs) %>%
                    weight = 2, opacity = 1,
                    color = ~pal(deployid)) %>% 
   addLegend(pal = pal,values = ~deployid,labels = ~deployid) %>% 
-  addMiniMap(tiles = providers$Esri.OceanBasemap,
-             toggleDisplay = T) %>% 
   suspendScroll()
 
 m
@@ -713,7 +711,7 @@ tbl_locs_activity <- tbl_percent %>%
 ### Create a Nested Data Structure
 
 We now have two objects: `sf_locs` and `tbl_locs_activity`. The first step is
-to_nest_ each of our objects by `deployid` so we can take advantage of list 
+to _nest_ each of our objects by `deployid` so we can take advantage of list 
 columns when fitting multiple deployments at once. We will group by `deployid` 
 and then call `tidyr::nest()`. For `sf_locs` we need to convert back into an 
 `sf` object after the group by and nesting.
@@ -728,6 +726,12 @@ tbl_locs_activity <- tbl_locs_activity %>%
   dplyr::group_by(deployid) %>% dplyr::arrange(date_time) %>% 
   tidyr::nest() 
 ```
+
+This _nested_ data structure and the use of list-columns is a relatively
+new concept for R. This approach is all part of the _tidyverse_ dialect
+and, instead of making this a full tutoriala on `purrr::map()`,
+`tidyr::nest()`, etc. I suggest reading up on various tutorials available
+on the web and playing around with other examples.
 
 ### Create model.matrix for Ellipse Errors
 
@@ -774,6 +778,11 @@ tbl_locs_activity <- tbl_locs_activity %>%
 
 ### Create Model Parameters
 
+We will create a function that will create our initial parameters (`init`)
+that `crawl::crwMLE()` requires. Essentially, the `a` parameter is the 
+starting coordinates along with a starting velocity (typically `0`). `P` is
+
+
 ```{r}
 init_params <- function(d) {
   ret <- list(a = c(d$x[1], 0,
@@ -782,24 +791,6 @@ init_params <- function(d) {
                          10 ^ 2, 10 ^ 2)))
   ret
 } 
-
-params <- function(d) {
-  list(
-  fixpar = c(1,1,NA,NA),
-  constr = list(lower = c(-Inf, -4), upper = (c(Inf, 4))),
-  lap_prior = function(par) {
-    -abs(par[2] - 4) / 5
-  },
-  lap_prior = function(par) {
-    -abs(par[2] - 4) / 5
-  },
-  reg_prior = function(par) {
-    dt(par[2] - 3,
-       df = 1,
-       log = TRUE)
-  }
-  )
-}
 
 sf_locs <- sf_locs %>% 
   dplyr::mutate(init = purrr::map(data,init_params),
@@ -867,6 +858,7 @@ fit_crawl <- function(d, init, fixpar, constr,
         trace = 0
       ),
       initialSANN = list(
+        maxit = 1500,
         trace = 0
       )
     )
@@ -894,23 +886,36 @@ fit_crawl <- function(d, init, fixpar, constr,
         trace = 0
       ),
       initialSANN = list(
+        maxit = 500,
         trace = 0
       )
     )
   }
   fit
 }
+```
 
-
+```{r,results = 'asis'}
+library(pander)
+panderOptions('knitr.auto.asis', FALSE)
 tbl_locs_fit <- sf_locs %>% 
   dplyr::mutate(fit = purrr::pmap(list(d = data,init = init,
                                 fixpar = fixpar,constr = constr),
-                           fit_crawl))
+                           fit_crawl),
+                params = map(fit, crawl::tidy_crwFit))
 
+tbl_locs_fit$params %>% walk(pander::pander)
+```
+
+```{r,results = 'asis'}
+panderOptions('knitr.auto.asis', FALSE)
 tbl_locs_activity_fit <- tbl_locs_activity %>%
   dplyr::mutate(fit = purrr::pmap(list(d = data,init = init,
                                 fixpar = fixpar,constr = constr),
-                           fit_crawl))
+                           fit_crawl),
+                params = map(fit, crawl::tidy_crwFit))
+
+tbl_locs_activity_fit$params %>% walk(pander::pander) 
 
 ```
 

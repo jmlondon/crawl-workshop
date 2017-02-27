@@ -26,7 +26,7 @@
 <meta name="author" content="Josh M. London and Devin S. Johnson">
 
 
-<meta name="date" content="2017-02-25">
+<meta name="date" content="2017-02-26">
 
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -60,9 +60,6 @@
 <script src="assets/leaflet-binding-1.1.0.9000/leaflet.js"></script>
 <script src="assets/leaflet-providers-1.0.27/leaflet-providers.js"></script>
 <script src="assets/leaflet-providers-plugin-1.1.0.9000/leaflet-providers-plugin.js"></script>
-<link href="assets/leaflet-minimap-3.3.1/Control.MiniMap.min.css" rel="stylesheet" />
-<script src="assets/leaflet-minimap-3.3.1/Control.MiniMap.min.js"></script>
-<script src="assets/leaflet-minimap-3.3.1/Minimap-binding.js"></script>
 <script src="assets/sleep-0.5.1/Leaflet.Sleep.js"></script>
 
 
@@ -197,7 +194,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h1 class="title">A Guide to Crawl-ing with R</h1>
 <h3 class="subtitle"><em>a book based on the ‘learning to crawl’ workshop(s)</em></h3>
 <h4 class="author"><em>Josh M. London and Devin S. Johnson</em></h4>
-<h4 class="date"><em>2017-02-25</em></h4>
+<h4 class="date"><em>2017-02-26</em></h4>
 </div>
 <div id="about-the-authors" class="section level2 unnumbered">
 <h2>About the Authors</h2>
@@ -207,6 +204,9 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h2>Preface</h2>
 <p>This book is being developed simultaneously with a 3-day workshop on the use of the <code>crawl</code> package for analysis of animal movment in R. Significant components of this book, example code, and content will change. Please use code and examples with caution and contact the authors before relying on advice, code, or examples for real-world analysis. Identification of errors is encouraged and folks should open an <a href="https://github.com/jmlondon/crawl-workshop/issues">issue via the GitHub repository</a>. We will also accept pull requests for any bug fixes or enhancements.</p>
 <p>A significant portion of this book is devoted to the support of the R package <code>crawl</code>. The package is available on <a href="https://cran.r-project.org/package=crawl">CRAN</a> as well as <a href="https://github.com/NMML/crawl">GitHub</a>.</p>
+<p>Many of the functions and code examples provided within this book are only available within the ‘devel’ version of <code>crawl</code> from GitHub.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">if (!<span class="kw">require</span>(devtools)) <span class="kw">install.packages</span>(<span class="st">&#39;devtools&#39;</span>)
+devtools::<span class="kw">install_github</span>(<span class="st">&#39;NMML/crawl&#39;</span>,<span class="dt">ref =</span> <span class="st">&#39;devel&#39;</span>)</code></pre></div>
 <p>If you are using <code>crawl</code> as part of a publication, please refer to the output from <code>citation('crawl')</code> for an appropriate citation. One should also consider referencing the original <em>Ecology</em> paper from 2008.</p>
 <blockquote>
 <p>Johnson, D. S., London, J. M., Lea, M.-A. and Durban, J. W. (2008), CONTINUOUS-TIME CORRELATED RANDOM WALK MODEL FOR ANIMAL TELEMETRY DATA. Ecology, 89: 1208–1215. <a href="doi:10.1890/07-1032.1" class="uri">doi:10.1890/07-1032.1</a></p>
