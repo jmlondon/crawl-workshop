@@ -779,9 +779,12 @@ tbl_locs_activity <- tbl_locs_activity %>%
 ### Create Model Parameters
 
 We will create a function that will create our initial parameters (`init`)
-that `crawl::crwMLE()` requires. Essentially, the `a` parameter is the 
-starting coordinates along with a starting velocity (typically `0`). `P` is
-
+that `crawl::crwMLE()` requires. This is a list of starting values for the mean 
+and variance-covariance for the initial state of the model. When choosing the 
+initial parameters, it is typical to have the mean centered on the first 
+observation with zero velocity. _a_ is the starting location for the model -- 
+the first known coordinate; and P is a 4x4 var-cov matrix that specifies 
+the error (in projected units) for the initial coordinates.
 
 ```{r}
 init_params <- function(d) {
@@ -791,6 +794,33 @@ init_params <- function(d) {
                          10 ^ 2, 10 ^ 2)))
   ret
 } 
+```
+
+In addition to specifying the initial state, we need to provide a vector 
+specifying which parameters will be fixed. Any values specified as _NA_ will be
+estimated by the model. This information is passed to
+`crawl::crwMLE()` as the functional parameter `fixpar`. For this example, 
+the first two values in the vector are set to 1 as we are providing the
+error structure with the ellipse information. The thrid value in the vector is
+the _sigma_ and this is almost always set to _NA_. The fourthe value is _beta_
+which is the autocorrelation parameter. This is also, typically, set to _NA_ as
+we want to estimate this. However, in some cases, the movement data will be
+more representative of Brownian motion and the model will be more likely to
+fit successfully if this is fixed to a value of _4_. If an activity parameter
+is provided, then a fifth value is inlcuded in `fixpar` and should be set to _0_.
+
+> insert section discussing fixpar values for Argos location quality classes
+
+It is also beneficial to provide some contraints for the model parameters you 
+would like estimated. There are two typical scenarios:
+
+1. limiting the parameter range for various Argos location quality classes
+2. limiting the _beta_ parameter estimation to be bounded by -4 and 4.
+
+In this example, we let the _sigma_ parameter ranged from -Inf to Inf while
+limiting _beta_ to range between -4 and 4.
+
+```{r}
 
 sf_locs <- sf_locs %>% 
   dplyr::mutate(init = purrr::map(data,init_params),
@@ -803,11 +833,6 @@ sf_locs <- sf_locs %>%
                   nrow(.))
                 
   )
-
-
-# sf_locs <- sf_locs %>% 
-#   dplyr::mutate(init = purrr::map(data,init_params),
-#                 params = purrr::map(data,params))
 
 tbl_locs_activity <- tbl_locs_activity %>% 
   dplyr::mutate(init = purrr::map(data,init_params),
@@ -825,6 +850,37 @@ tbl_locs_activity <- tbl_locs_activity %>%
 
 ## Fitting with `crawl::crwMLE()`
 
+The `crawl::crwMLE()` function is the workhorse for fitting our observed data to
+a continuous-time correlated random walk model. At this point, we have our data
+structure setup and we've established our initial parameters, specified fixed
+values for any parameters we will not estimate, and provided some constraints
+on those parameter estimates.
+
+Instead of calling `crawl::crwMLE()` directly, we will create a wrapper function
+that will work better with our _tidy_ approach. It also allows us to make 
+sequencial calls to `crawl::crwMLE()` that adjust parameters in cases where the
+fit fails.
+
+There are two ways in which we can adjust the parameters:
+
+1. provide a prior (or, in this case, a series of priors) in the form of 
+a function
+2. fix the _beta_ parameter at 4 to specify Brownian motion
+
+A few other aspects about our wrapper function to note. We pass our observed
+data in as `d` and then the parameters `init`, `fixpar`, and `constr`.
+Additionally, we can specify `tryBrownian = FALSE` if we don't want the model
+to fit with Brownian motion as the final try.
+
+Each of the prior functions is specified within the function and the function
+cycles through a for loop of calls to `crawl::crwMLE()` with each prior. Note,
+the first prior value is _NULL_ to specify our first model fit try is without
+any prior.
+
+Our wrapper function also checks the observed data, `d`, for any _activity_
+column to determine whether activity parameter should be included in the 
+model fit.
+
 ```{r}
 fit_crawl <- function(d, init, fixpar, constr, 
                       tryBrownian = TRUE) {
@@ -835,7 +891,7 @@ fit_crawl <- function(d, init, fixpar, constr,
     lap_prior = function(par) { -abs(par[2] - 4) / 5 },
     reg_prior = function(par) { dt(par[2] - 3, df = 1, log = TRUE) }
   )
-  
+  #cycle through 4 different prior values. the first being no prior/NULL
   for (prior in priors) {
     fit <- crawl::crwMLE(
       mov.model =  ~ 1,
@@ -867,6 +923,8 @@ fit_crawl <- function(d, init, fixpar, constr,
     }
   }
   
+  # at this point, the most likely reason for failing to fit is b/c the mov't is
+  # more Brownian in nature. Here, we fix beta at 4 which specifies Brownian
   if (any(is.nan(fit$se)) && tryBrownian) {
     fixPar = c(1, 1, NA, 4)
     
@@ -894,6 +952,15 @@ fit_crawl <- function(d, init, fixpar, constr,
   fit
 }
 ```
+
+The _tidy_ and _purrrific_ approach to model fitting is to store the model
+results and estimated parameters as a list-column within our _nested_ tibble.
+This has the significant benefit of keeping all our data, model specifications,
+model fits, parameter estimates --- and, next, our model predictions --- nicely
+organized. 
+
+> this section relies on the `crawl::tidy_crwFit()` function which is only 
+> available with the latest `devel` version of `crawl` from GitHub.
 
 ```{r,results = 'asis'}
 library(pander)
