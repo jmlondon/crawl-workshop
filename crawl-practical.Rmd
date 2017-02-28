@@ -962,28 +962,41 @@ organized.
 > this section relies on the `crawl::tidy_crwFit()` function which is only 
 > available with the latest `devel` version of `crawl` from GitHub.
 
-```{r,results = 'asis'}
+```{r}
 library(pander)
-panderOptions('knitr.auto.asis', FALSE)
 tbl_locs_fit <- sf_locs %>% 
   dplyr::mutate(fit = purrr::pmap(list(d = data,init = init,
                                 fixpar = fixpar,constr = constr),
                            fit_crawl),
                 params = map(fit, crawl::tidy_crwFit))
-
-tbl_locs_fit$params %>% walk(pander::pander,caption = "crwMLE fit parameters")
 ```
 
+After successfully fitting our models, we can explore the parameter estimates
+that are a result of that fit. The first set of tables are for our two seal
+deployments and the model has been fit without any _activity_ data.
+
 ```{r,results = 'asis'}
+panderOptions('knitr.auto.asis', FALSE)
+tbl_locs_fit$params %>% 
+  walk(pander::pander,caption = "crwMLE fit parameters")
+```
+
+```{r}
 panderOptions('knitr.auto.asis', FALSE)
 tbl_locs_activity_fit <- tbl_locs_activity %>%
   dplyr::mutate(fit = purrr::pmap(list(d = data,init = init,
                                 fixpar = fixpar,constr = constr),
                            fit_crawl),
                 params = map(fit, crawl::tidy_crwFit))
+```
 
-tbl_locs_activity_fit$params %>% walk(pander::pander,caption = "crwMLE fit parameters")
+Our second set of tables are for our two seal deployments and the model has 
+been fit with inclusion of _activity_ data.
 
+```{r,results = 'asis'}
+panderOptions('knitr.auto.asis', FALSE)
+tbl_locs_activity_fit$params %>% 
+  walk(pander::pander,caption = "crwMLE fit parameters")
 ```
 
 
@@ -991,7 +1004,29 @@ tbl_locs_activity_fit$params %>% walk(pander::pander,caption = "crwMLE fit param
 
 ## Predicting a Movement Track
 
+At this point, we have a fitted model for each seal and the next obvious step
+is to visualize and explore the resulting fitted track. To accomplish this,
+we'll rely on the `crawl::crwPredict()` function. This function requires two
+key arguments: an `object.crwFit` and a `predTime` argument. The first is 
+simply the fit object from our model fit. The second can be one of two types:
 
+1. a vector of POSIXct or numeric values that provide additional prediction
+times beyond the times for our observed locations in the original data. This
+vector should not start before the first observation or end after the last
+observation.
+2. if the original data were provided as a POSIXct type (which, in this example,
+they were), then `crawl::crwPredict()` can derive a sequence of regularly
+spaced prediction times from the original data. The user only needs to provide
+a character string that describes the regularly spaced duration. This character
+string should correspond to the `by` argument of the `seq.POSIXt` function
+(e.g. '1 hour', '30 mins').
+
+```{r,crwpredict-plots}
+tbl_locs_activity_fit <- tbl_locs_activity_fit %>% 
+  dplyr::mutate(predict = purrr::map(fit,crawl::crwPredict,predTime = '1 hour'))
+
+tbl_locs_activity_fit$predict %>% purrr::walk(crawl::crwPredictPlot)
+```
 
 ## Simulating Tracks from the Posterior
 

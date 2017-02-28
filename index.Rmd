@@ -3,10 +3,10 @@ title: "A Guide to Crawl-ing with R"
 subtitle: "a book based on the 'learning to crawl' workshop(s)"
 author: "Josh M. London and Devin S. Johnson"
 date: "`r Sys.Date()`"
-site: "bookdown::bookdown_site"
+site: bookdown::bookdown_site
 description: "This book provides mathematical and statistical background related to the modeling of animal movement from satellite telemetry data as well as pragmatic approaches and examples for implementing analysis with the R package, crawl."
-url: "https://jmlondon.github.io/crawl-workshop/"
-github-repo: "jmlondon/crawl-workshop"
+url: 'https\://jmlondon.github.io/crawl-workshop/'
+github-repo: jmlondon/crawl-workshop
 output:
   bookdown::gitbook:
     lib_dir: assets
