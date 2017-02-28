@@ -28,3 +28,4 @@ fit.rds
 tbl160941_histos.rds
 input_tbl.rds
 tbl160941_locs.rds
+_bookdown_files/*
