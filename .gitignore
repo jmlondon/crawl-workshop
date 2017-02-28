@@ -25,3 +25,6 @@ vignettes/*.pdf
 .Rproj.user
 .DS_Store
 fit.rds
+tbl160941_histos.rds
+input_tbl.rds
+tbl160941_locs.rds
