@@ -16,6 +16,13 @@ providing the user with suggested principles, workflows, and pragmatic
 approaches that, if followed, should make analysis with `crawl` more
 efficient and reliable.
 
+> Telemetry data are collected on a wide range of species and come in a number
+> of formats and data structures. The code and examples provided here were
+> developed from data the authors are most familiar with. You will very 
+> likely NOT be able to just copy and paste the code and apply to your data.
+> We suggest you focus more on understanding what the code is doing and then
+> write your own version of the code to meet your data and your research needs.
+
 This content is broken up in the following sections:
 
 1. Analysis and Coding Principles
@@ -982,7 +989,6 @@ tbl_locs_fit$params %>%
 ```
 
 ```{r}
-panderOptions('knitr.auto.asis', FALSE)
 tbl_locs_activity_fit <- tbl_locs_activity %>%
   dplyr::mutate(fit = purrr::pmap(list(d = data,init = init,
                                 fixpar = fixpar,constr = constr),
@@ -1023,10 +1029,69 @@ string should correspond to the `by` argument of the `seq.POSIXt` function
 
 ```{r,crwpredict-plots}
 tbl_locs_activity_fit <- tbl_locs_activity_fit %>% 
-  dplyr::mutate(predict = purrr::map(fit,crawl::crwPredict,predTime = '1 hour'))
+  dplyr::mutate(predict = purrr::map(fit,
+                                     crawl::crwPredict,
+                                     predTime = '1 hour'))
 
 tbl_locs_activity_fit$predict %>% purrr::walk(crawl::crwPredictPlot)
 ```
+
+We still need to perform some additional processing of the prediction object
+before we can use the information in analysis or visualize the track. We will
+create a custom function `as.sf()` which will convert our `crwPredict` object
+into an `sf` object of either "POINT" or "MULTILINESTRING"
+
+```{r}
+as.sf <- function(p,id,epsg,type) {
+  p <- 
+  sf::st_as_sf(p, coords = c("mu.x","mu.y")) %>% 
+    dplyr::mutate(deployid = id) %>% 
+  sf::st_set_crs(.,epsg)
+  if (type == "POINT") return(p)
+  if (type == "LINE") {
+  p <- p %>% sf::st_geometry() %>% 
+    st_cast("MULTIPOINT",ids = as.integer(as.factor(p$deployid))) %>% 
+    st_cast("MULTILINESTRING") %>% 
+    st_sf(deployid = unique(p$deployid))
+  return(p)
+  }
+}
+
+tbl_locs_activity_fit <- tbl_locs_activity_fit %>% 
+  dplyr::mutate(sf_points = purrr::map2(predict, deployid,
+                                       as.sf,
+                                       epsg = 3571, 
+                                       type = "POINT"),
+                sf_line = purrr::map2(predict, deployid,
+                                     as.sf,
+                                     epsg = 3571,
+                                     type = "LINE"))
+```
+
+```{r}
+sf_pred_lines <- tbl_locs_activity_fit$sf_line %>% 
+  lift(rbind)() %>% 
+  sf::st_set_crs(3571) 
+```
+
+(ref:leaflet-pred-lines-fig-cap) An interactive map of predicted tracks from two harbor seals in the Aleutian Islands. 
+
+```{r, leaflet-pred-lines, out.width = '100%', fig.cap = '(ref:leaflet-pred-lines-fig-cap)'}
+n <- length(unique(sf_pred_lines$deployid))
+pal <- colorFactor(ggthemes::ptol_pal()(n), 
+                   domain = sf_pred_lines$deployid)
+
+m <- sf_pred_lines %>% 
+  sf::st_transform(4326) %>% 
+  leaflet() %>% 
+  addProviderTiles("Esri.OceanBasemap") %>% 
+  addPolylines(weight = 2, color = ~pal(deployid)) %>% 
+  addLegend(pal = pal,values = ~deployid,labels = ~deployid) %>% 
+  suspendScroll()
+
+m
+```
+
 
 ## Simulating Tracks from the Posterior
 
