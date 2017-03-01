@@ -156,6 +156,7 @@ library(tidyverse)
 library(purrr)
 library(lubridate)
 if(!require(devtools)) install.packages('devtools')
+library(sp)
 ```
 
 The `readr` includes the `read_csv()` function which we will rely on to read
@@ -1031,7 +1032,7 @@ string should correspond to the `by` argument of the `seq.POSIXt` function
 tbl_locs_activity_fit <- tbl_locs_activity_fit %>% 
   dplyr::mutate(predict = purrr::map(fit,
                                      crawl::crwPredict,
-                                     predTime = '1 hour'))
+                                     predTime = '1 hour')) 
 
 tbl_locs_activity_fit$predict %>% purrr::walk(crawl::crwPredictPlot)
 ```
@@ -1042,18 +1043,20 @@ create a custom function `as.sf()` which will convert our `crwPredict` object
 into an `sf` object of either "POINT" or "MULTILINESTRING"
 
 ```{r}
-as.sf <- function(p,id,epsg,type) {
+as.sf <- function(p,id,epsg,type,loctype) {
   p <- 
-  sf::st_as_sf(p, coords = c("mu.x","mu.y")) %>% 
+    sf::st_as_sf(p, coords = c("mu.x","mu.y")) %>% 
     dplyr::mutate(deployid = id) %>% 
-  sf::st_set_crs(.,epsg)
+    filter(loctype %in% loctype) %>% 
+    sf::st_set_crs(.,epsg)
   if (type == "POINT") return(p)
   if (type == "LINE") {
-  p <- p %>% sf::st_geometry() %>% 
-    st_cast("MULTIPOINT",ids = as.integer(as.factor(p$deployid))) %>% 
-    st_cast("MULTILINESTRING") %>% 
-    st_sf(deployid = unique(p$deployid))
-  return(p)
+    p <- p %>% dplyr::arrange(TimeNum) %>%  
+      sf::st_geometry() %>% 
+      st_cast("MULTIPOINT",ids = as.integer(as.factor(p$deployid))) %>% 
+      st_cast("MULTILINESTRING") %>% 
+      st_sf(deployid = unique(p$deployid))
+    return(p)
   }
 }
 
@@ -1061,11 +1064,13 @@ tbl_locs_activity_fit <- tbl_locs_activity_fit %>%
   dplyr::mutate(sf_points = purrr::map2(predict, deployid,
                                        as.sf,
                                        epsg = 3571, 
-                                       type = "POINT"),
+                                       type = "POINT",
+                                       loctype = "p"),
                 sf_line = purrr::map2(predict, deployid,
                                      as.sf,
                                      epsg = 3571,
-                                     type = "LINE"))
+                                     type = "LINE",
+                                     loctype = "p"))
 ```
 
 ```{r}
@@ -1092,6 +1097,78 @@ m <- sf_pred_lines %>%
 m
 ```
 
+## Adjust Path Around Land
+
+The `crawl` package now includes a `fix_path()` function which will adjust any
+predicted path around land features using a least-cost function. 
+
+```{r}
+bering_base <- nPacMaps::bering(fortify = FALSE, simplify = FALSE)
+bering_base@polygons <- lapply(bering_base@polygons,  
+                               maptools::checkPolygonsHoles)
+
+poly_expand <- 50000
+res <- 200
+tmpland <- raster::rasterTmpFile()
+r <- raster::raster(
+  ext = raster::extend(raster::extent(matrix(st_bbox(sf_pred_lines), 
+                                             2)), 
+                                      poly_expand),
+                       resolution = res,
+                       crs = sp::CRS("+init=epsg:3571")
+)
+land <- raster::rasterize(bering_base,
+                          r,
+                          getCover = TRUE,
+                          background = 0,
+                          filename = tmpland)
+land <- land / 100
+land[land < 1] <- 0
+water <- raster::asFactor(1 - land)
+trans <- gdistance::transition(water, "areas", directions = 16)[[1]]
+
+.fix_path <- function(prd, res_raster, trans) {
+  m <- crawl::fix_path(prd, res_raster = land, trans = trans)
+  prd$mu.x <- m[,"mu.x"]
+  prd$mu.y <- m[,"mu.y"]
+  prd
+}
+
+tbl_locs_activity_fit <- tbl_locs_activity_fit %>% 
+  dplyr::mutate(sf_points_fix = purrr::map(predict,
+                                       .fix_path,
+                                       res_raster = land,
+                                       trans = trans))
+
+tbl_locs_activity_fit <- tbl_locs_activity_fit %>%  
+  dplyr::mutate(sf_lines_fix = purrr::map2(sf_points_fix,deployid,
+                                     as.sf,
+                                     epsg = 3571,
+                                     type = "LINE",
+                                     loctype = "p"))
+
+  sf_pred_lines_fix <- tbl_locs_activity_fit$sf_lines_fix %>% 
+    lift(rbind)() %>% sf::st_set_crs(3571) 
+
+```
+
+(ref:leaflet-pred-lines-fix-fig-cap) An interactive map of predicted tracks from two harbor seals in the Aleutian Islands. The paths have been _fixed_ to re-route around land features.
+
+```{r, leaflet-pred-lines-fix, out.width = '100%', fig.cap = '(ref:leaflet-pred-lines-fix-fig-cap)'}
+n <- length(unique(sf_pred_lines_fix$deployid))
+pal <- colorFactor(ggthemes::ptol_pal()(n), 
+                   domain = sf_pred_lines_fix$deployid)
+
+m <- sf_pred_lines_fix %>% 
+  sf::st_transform(4326) %>% 
+  leaflet() %>% 
+  addProviderTiles("Esri.OceanBasemap") %>% 
+  addPolylines(weight = 2, color = ~pal(deployid)) %>% 
+  addLegend(pal = pal,values = ~deployid,labels = ~deployid) %>% 
+  suspendScroll()
+
+m
+```
 
 ## Simulating Tracks from the Posterior
 
