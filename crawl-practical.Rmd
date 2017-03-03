@@ -362,7 +362,7 @@ In this case, our new columns will be `bin` and `percent_dry` and we will
 _gather_ the values from all of the columns that start with the character string
 _bin_.
 
-Since we know that each `bin` column reprents an hour of the day, we can also 
+Since we know that each `bin` column represents an hour of the day, we can also 
 improve our data structure by changing the value of `date_hour` (note we rename
 `date` to `date_hour`) to reflect this. We accomplish this by creating a simple
 lookup table (tibble) that relates each `bin` column to the hour of day it
@@ -1046,12 +1046,14 @@ into an `sf` object of either "POINT" or "MULTILINESTRING"
 as.sf <- function(p,id,epsg,type,loctype) {
   p <- 
     sf::st_as_sf(p, coords = c("mu.x","mu.y")) %>% 
-    dplyr::mutate(deployid = id) %>% 
+    dplyr::mutate(TimeNum = lubridate::as_datetime(TimeNum),
+                  deployid = id) %>% 
+    dplyr::rename(pred_dt = TimeNum) %>% 
     filter(loctype %in% loctype) %>% 
     sf::st_set_crs(.,epsg)
   if (type == "POINT") return(p)
   if (type == "LINE") {
-    p <- p %>% dplyr::arrange(TimeNum) %>%  
+    p <- p %>% dplyr::arrange(pred_dt) %>%  
       sf::st_geometry() %>% 
       st_cast("MULTIPOINT",ids = as.integer(as.factor(p$deployid))) %>% 
       st_cast("MULTILINESTRING") %>% 
@@ -1100,7 +1102,20 @@ m
 ## Adjust Path Around Land
 
 The `crawl` package now includes a `fix_path()` function which will adjust any
-predicted path around land features using a least-cost function. 
+predicted path around land features using a least-cost function. For this
+function, you'll need a raster representation of your land (or other feature
+to avoid). In this case, we are pulling from the nPacMaps R packages (available
+on Github at https://github.com/jmlondon/nPacMaps) which includes a basemap
+for the Bering Sea and Aleutian Islands.
+
+Additional parameters of importance are an expansion amount (`poly_expand`)
+which expands the study area beyond the range of our predicted track. We also
+need to set the raster resolution (`res`). In this case, our area of interest
+is relatively small and we need a lower resolution value (200 meters) in order 
+to capture all of the land detail. Such a high resolution raster is NOT advised
+for larger scale studies. The remainder of the code example below simply
+creates the raster and sets up the transition layer needed to calculate the
+least-cost path.
 
 ```{r}
 bering_base <- nPacMaps::bering(fortify = FALSE, simplify = FALSE)
@@ -1126,9 +1141,19 @@ land <- land / 100
 land[land < 1] <- 0
 water <- raster::asFactor(1 - land)
 trans <- gdistance::transition(water, "areas", directions = 16)[[1]]
+```
 
+The `crawl::fix_path` function will return a 2-column matrix of `mu.x` and 
+`mu.y` values. This matrix is of the same length as the `crwPredict` object and
+we need to replace the original coordinates with our _fixed_ values. To make
+this easier within our functional approach, we create a wrapper function,
+`.fix_path` that calls `crawl::fix_path` and then edits the original data. The
+last step is to create a combined `sf` object that has each of our _fixed_ lines
+and we can use this for any plotting.
+
+```{r}
 .fix_path <- function(prd, res_raster, trans) {
-  m <- crawl::fix_path(prd, res_raster = land, trans = trans)
+  m <- crawl::fix_path(prd, res_raster = res_raster, trans = trans)
   prd$mu.x <- m[,"mu.x"]
   prd$mu.y <- m[,"mu.y"]
   prd
@@ -1136,19 +1161,19 @@ trans <- gdistance::transition(water, "areas", directions = 16)[[1]]
 
 tbl_locs_activity_fit <- tbl_locs_activity_fit %>% 
   dplyr::mutate(sf_points_fix = purrr::map(predict,
-                                       .fix_path,
-                                       res_raster = land,
-                                       trans = trans))
+                                           .fix_path,
+                                           res_raster = land,
+                                           trans = trans))
 
 tbl_locs_activity_fit <- tbl_locs_activity_fit %>%  
   dplyr::mutate(sf_lines_fix = purrr::map2(sf_points_fix,deployid,
-                                     as.sf,
-                                     epsg = 3571,
-                                     type = "LINE",
-                                     loctype = "p"))
+                                           as.sf,
+                                           epsg = 3571,
+                                           type = "LINE",
+                                           loctype = "p"))
 
-  sf_pred_lines_fix <- tbl_locs_activity_fit$sf_lines_fix %>% 
-    lift(rbind)() %>% sf::st_set_crs(3571) 
+sf_pred_lines_fix <- tbl_locs_activity_fit$sf_lines_fix %>% 
+  lift(rbind)() %>% sf::st_set_crs(3571) 
 
 ```
 
@@ -1171,5 +1196,10 @@ m
 ```
 
 ## Simulating Tracks from the Posterior
+
+```{r}
+
+
+```
 
 ## Visualization of Results
