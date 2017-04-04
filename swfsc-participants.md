@@ -6,3 +6,4 @@
 * Huihua Lee
 * Alex Curtis
 * Rosa Runcie
+* Jefferson Hinke
