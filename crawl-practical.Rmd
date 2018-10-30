@@ -19,7 +19,7 @@ efficient and reliable.
 > Telemetry data are collected on a wide range of species and come in a number
 > of formats and data structures. The code and examples provided here were
 > developed from data the authors are most familiar with. You will very 
-> likely NOT be able to just copy and paste the code and apply to your data.
+> likely **NOT** be able to just copy and paste the code and apply to your data.
 > We suggest you focus more on understanding what the code is doing and then
 > write your own version of the code to meet your data and your research needs.
 
@@ -39,7 +39,7 @@ This content is broken up in the following sections:
 ## Analysis and Coding Principles
 
 As with anything in science and R, there are a number of right ways to 
-approach a problem. The workflows and principles outline here aren't the only
+approach a problem. The workflows and principles outlined here aren't the only
 way to use `crawl`. However, this content has been developed after years of
 working with researchers and troubleshooting common issues. For most users,
 following this guide will prove a successful endeavor. More advanced users
@@ -49,7 +49,7 @@ point but then expand to meet their need.
 ### Source Data are Read Only
 
 Source data should not be edited. In many cases, the financial and personal
-investment required to acquire these data is significant. In addition, the
+investment required to obtain these data is significant. In addition, the
 unique timing, location, and nature of the data cannot be replicated so every
 effort should be employed to preserve the integrity of source data as they
 were collected. All efforts should be made to also insure that source data
@@ -73,9 +73,9 @@ Scripting the data assembly should be combined with an effort to properly
 document the process. Documentation is an important component of reproducibility
 and, if done as part of the scritping and development process, provides an
 easier workflow for publishing results and data to journals and repositories.
-The `rmarkdown`, `bookdown`, and `knitr` packages provide an excellent framework for 
-combining your R scripts with documentation. This entire book is written with
-`bookdown` and `knitr`.
+The `rmarkdown`, `bookdown`, and `knitr` packages provide an excellent 
+framework for combining your R scripts with documentation. This entire 
+book is written with `bookdown` and `knitr`.
 
 ### Embrace the Tidyverse
 
@@ -102,7 +102,8 @@ The `tidyverse` package is a wrapper for a number of separate packages that each
 contribute to the tidy'ing of data. The `tidyr`, `dplyr`, `readr`, and `purrr`
 packages are key components. In addition, the `lubridate` package (not included
 in the `tidyverse` package) is especially useful for consistent maninpulation
-of date-time values.
+of date-time values. More information and documentation for the packages can be
+found at the [tidyverse.org](http://tidyverse.org) website.
 
 ### Anticipate Errors & Trap Them
 
@@ -130,17 +131,17 @@ their scripts.
 
 ### Read In CSV Source Data
 
-Here we will demonstrate the development of such a script using data downloaded
-from the Wildlife Computers data portal. All data are grouped by deployment and
-presented in various comma-separated files. The `*-Locations.csv` contains all
-of the Argos location estimates determined for the deployment. At a minimum, this
-file includes identifying columns such as `DeployID`, `PTT`, `Date`, `Quality`,
-`Type`, `Latitude`, and `Longitude`. If the Argos Kalman filtering
-approach has been enabled (which it should be for any modern tag deployment),
-then additional data will be found in columns that describe the error ellipses
-(e.g. `Error Semi-major axis`, `Error Semi-minor axis`, 
-`Error Ellipse orientation`). Note, if the tag transmitted GPS/FastLoc data,
-this file will list those records as `Type = 'FastGPS'`.
+Here we will demonstrate the development of such a script using data downloaded 
+from the Wildlife Computers (Redmond, Washington, USA) data portal. All data are
+grouped by deployment and presented in various comma-separated files. The
+`*-Locations.csv` contains all of the Argos location estimates determined for
+the deployment. At a minimum, this file includes identifying columns such as
+`DeployID`, `PTT`, `Date`, `Quality`, `Type`, `Latitude`, and `Longitude`. If
+the Argos Kalman filtering approach has been enabled (which it should be for any
+modern tag deployment), then additional data will be found in columns that
+describe the error ellipses (e.g. `Error Semi-major axis`, `Error Semi-minor
+axis`, `Error Ellipse orientation`). Note, if the tag transmitted GPS/FastLoc
+data, this file will list those records as `Type = 'FastGPS'`.
 
 The other file of interest we will be working with is an example `*-Histos.csv`.
 These files include dive and haul-out behavior data derived from sensors on the
@@ -149,21 +150,23 @@ tag. Most notably, the pressure transducer (for depth) and the salt-water switch
 demonstrate how we can properly _tidy_ our data.
 
 We will rely on the `tidyverse` set of packages plus `purrr` and `lubridate`
-to make reading and processing these files easier and more reliable.
+to make reading and processing these files easier and more reliable. Since we are
+working with spatial data, the `sf` package will be used (as well as a few
+legacy functions from the `sp` package).
 
 ```{r, message = FALSE, warning = FALSE}
-library(tidyverse)
-library(purrr)
-library(lubridate)
 if(!require(devtools)) install.packages('devtools')
+library(tidyverse)
+library(lubridate)
 library(sp)
+library(sf)
 ```
 
 The `readr` includes the `read_csv()` function which we will rely on to read
 the csv data into R.
 
 ```{r}
-path_to_file <- "examples/data/160941-Locations.csv"
+path_to_file <- file.path("examples","data","160941-Locations.csv")
 tbl_locs <- readr::read_csv(path_to_file)
 ```
 
@@ -212,14 +215,12 @@ The `purrr::map()` function can be combined with `readr::read_csv()` and
 `dplyr::bind_rows()` make this easy.
 
 ```{r}
-tbl_locs <- dir('examples/data/', 
-    "*-Locations.csv", 
-    full.names = TRUE) %>% 
+tbl_locs <- dir('examples/data/', "*-Locations.csv", full.names = TRUE) %>%
   purrr::map(read_csv,col_types = my_cols) %>% 
   dplyr::bind_rows()
 
-tbl_locs %>% group_by(DeployID) %>% 
-  summarise(num_locs = n(),
+tbl_locs %>% dplyr::group_by(DeployID) %>% 
+  dplyr::summarise(num_locs = n(),
             start_date = min(Date),
             end_date = max(Date))
 ```
@@ -240,6 +241,7 @@ we will create our own function, `make_names()`, which expands on the base
 function `make.names()`. We also want to change the `date` column to a more appropriate and less confusing `date_time`.
 
 ```{r}
+## This function is also available within the crawlr package
 make_names <- function(x) {
   new_names <- make.names(colnames(x))
   new_names <- gsub("\\.", "_", new_names)
@@ -248,9 +250,7 @@ make_names <- function(x) {
   x
 }
 
-tbl_locs <- dir('examples/data/', 
-    "*-Locations.csv", 
-    full.names = TRUE) %>% 
+tbl_locs <- dir('examples/data/', "*-Locations.csv", full.names = TRUE) %>% 
   purrr::map(read_csv,col_types = my_cols) %>% 
   dplyr::bind_rows() %>% 
   make_names() %>%  
@@ -381,9 +381,9 @@ tbl_percent <- tbl_percent %>%
   dplyr::rename(date_hour = date) %>% 
   dplyr::mutate(date_hour = date_hour + lubridate::hours(hour)) %>% 
   dplyr::select(deployid,date_hour,percent_dry) %>%
-  group_by(deployid, date_hour) %>% 
-  summarize(percent_dry = mean(percent_dry)) %>% 
-  ungroup() %>% 
+  dplyr::group_by(deployid, date_hour) %>% 
+  dplyr::summarize(percent_dry = mean(percent_dry)) %>% 
+  dplyr::ungroup() %>% 
   dplyr::arrange(deployid,date_hour)
 ```
 
@@ -398,45 +398,60 @@ tbl_percent
 
 To further explore our imported data and confirm there aren't any remaining
 issues to address, we can create visual representations of the data. The first
-plot will rely on the `leaflet` package to create an interactive plot of the
-`tbl_locs` object. The second plot will create a heatmap of `tbl_percent` values.
+plot will rely on the spatial features within `ggplot2` and an extension to the
+package, `ggspatial` to create a plot of the `tbl_locs` object. The second plot 
+will create a heatmap of `tbl_percent` values.
 
 ```{r}
-library(leaflet)
-if (!require(leaflet.extras)) devtools::install_github('bhaskarvk/leaflet.extras')
-library(leaflet.extras) 
-library(ggthemes)
-library(sf)
+library(ggplot2)
+library(ggspatial)
 ```
+
+The `sf` package provides the bulk of our spatial data framework. This is not
+intended to be a full `sf` tutorial, but, where possible we will highlight a
+few features and functions to explain the workflow. Users are encouraged to
+spend significant time exploring and understanding the `sf` package through
+existing documentation and several examples and blog posts available online. 
+
+Here, we are simply creating an `sf_locs` object via the `sf::st_as_sf()` 
+function. We specify the coordinate columns and then indicate the projection
+of the data is geographic (lat/lon) as indicated by the `4326` epsg code.
+
+In addition to points, it is often useful to organize the point data into 
+separate tracks for each deployment. The code to derive tracks from point data
+within `sf` is a bit more complicated but is demonstrated below. The `sf_lines`
+object is, essentially, a data frame with each row representing a single line
+from a single deployment.
 
 ```{r}
-sf_locs <- st_as_sf(tbl_locs, coords = c("longitude","latitude")) %>% 
-  st_set_crs("+init=epsg:4326")
+sf_locs <- sf::st_as_sf(tbl_locs, coords = c("longitude","latitude")) %>% 
+  sf::st_set_crs(4326)
 
-sf_lines <- sf_locs %>%
-  st_geometry() %>% 
-  st_cast("MULTIPOINT",ids = as.integer(as.factor(sf_locs$deployid))) %>% 
-  st_cast("MULTILINESTRING") %>% 
-  st_sf(deployid = as.factor(unique(sf_locs$deployid)))
+sf_lines <- sf_locs %>% 
+  dplyr::arrange(deployid, date_time) %>% 
+  sf::st_geometry() %>% 
+  sf::st_cast("MULTIPOINT",ids = as.integer(as.factor(sf_locs$deployid))) %>% 
+  sf::st_cast("MULTILINESTRING") %>% 
+  sf::st_sf(deployid = as.factor(unique(sf_locs$deployid)))
 ```
 
-(ref:leaflet-locs-fig-cap) An interactive map of observed satellite telemetry
+(ref:map-locs-fig-cap) An interactive map of observed satellite telemetry
 locations from two harbor seals in the Aleutian Islands. 
 
-```{r, leaflet-locs, out.width = '100%', fig.cap = '(ref:leaflet-locs-fig-cap)'}
-pal <- colorFactor(ggthemes::ptol_pal()(2), 
-                   domain = sf_lines$deployid)
+```{r, map-locs, out.width = '100%', fig.cap = '(ref:map-locs-fig-cap)'}
 
-m <- leaflet(data = sf_locs) %>% 
-  addProviderTiles("Esri.OceanBasemap") %>% 
-  addPolylines(data = sf_lines, weight = 2, color = ~pal(deployid)) %>% 
-  addCircleMarkers(radius = 2, 
-                   weight = 2, opacity = 1,
-                   color = ~pal(deployid)) %>% 
-  addLegend(pal = pal,values = ~deployid,labels = ~deployid) %>% 
-  suspendScroll()
+esri_ocean <- paste0('https://services.arcgisonline.com/arcgis/rest/services/',
+                     'Ocean/World_Ocean_Base/MapServer/tile/${z}/${y}/${x}.jpeg')
 
-m
+ggplot() + 
+  annotation_map_tile(type = esri_ocean,zoomin = 1,progress = "none") +
+  layer_spatial(sf_lines, size = 0.75,aes(color = deployid)) +
+  scale_x_continuous(expand = expand_scale(mult = c(.6, .6))) +
+  scale_color_brewer(palette = "Dark2") +
+  theme(legend.position = "none") +
+  ggtitle("Observed Argos Location Paths", 
+          subtitle = "harbor seals (n=2), Aleutian Islands, Alaska, USA")
+
 ```
 
 (ref:percent-timeline-heatmap) Depiction of hourly percent dry observations for
@@ -457,11 +472,11 @@ p <- tbl_percent %>%
                        title.position = "bottom",
                        barwidth = 25, barheight = 1 )) +
   facet_wrap( ~ deployid, nrow = 2) +
-  theme_fivethirtyeight() +
   theme(axis.title = element_text()) +
   ylab("local solar hour") + xlab("") +
   ggtitle(paste("Haul-out Behavior by Local Solar Hour")) +
-  theme(panel.grid.major.x = element_blank()) 
+  theme(panel.grid.major.x = element_blank(),
+        legend.position="bottom") 
 p
 ```
 
@@ -475,10 +490,9 @@ the tags are dry for most of an hour, the seal is likely hauled out and not
 moving. The `crawl::crwMLE()` will interpret this as an indication that the
 auto-correlation parameter should go to zero.
 
-In this section, we will prepare two input objects for `crawl::crwMLE()`. The
-first will be a spatial object of location estimates that can be passed
-directly. The second, will be a data.frame that represents a merge between the
-location estimates and percent-timeline data.
+In this section, we will prepare **two** input objects for `crawl::crwMLE()`. The
+first will be a spatial object (`sf_locs`) of location estimates that can be passed
+directly. The second, will be a data.frame (`tbl_locs_activity`) that represents a merge between the location estimates and percent-timeline data.
 
 ### Error Parameters for GPS Data
 
@@ -532,13 +546,13 @@ tbl_locs <- tbl_locs %>%
     )
 
 user_dt <- tbl_locs %>% dplyr::rename(release_dt = date_time) %>% 
-  dplyr::filter(type == 'User') %>% select(deployid,release_dt)
+  dplyr::filter(type == 'User') %>% dplyr::select(deployid,release_dt)
 
-tbl_locs <- tbl_locs %>% left_join(user_dt, by = 'deployid') %>% 
-  filter(date_time >= release_dt) %>% select(-release_dt)
+tbl_locs <- tbl_locs %>% dplyr::left_join(user_dt, by = 'deployid') %>% 
+  dplyr::filter(date_time >= release_dt) %>% dplyr::select(-release_dt)
 
-tbl_locs %>% group_by(deployid) %>% select(deployid,date_time,type) %>% 
-  do(head(.,1))
+tbl_locs %>% dplyr::group_by(deployid) %>% dplyr::select(deployid,date_time,type) %>% 
+  dplyr::do(head(.,1))
 ```
 
 ### Duplicate Times
@@ -550,12 +564,12 @@ more reliable to _fix_ these records. The first option for _fixing_ the records
 would be to eliminate one of the duplicate records. However, it is often not
 possible to reliably identify which record is more appropriate to discard. For
 this reason, we advocate adjusting the date-time value for one of the records and
-increasing the value by 1 second. To facilitate this, we will rely on the 
+increasing the value by 10 second. To facilitate this, we will rely on the 
 `xts::make.time.unique()` function.
 
 ```{r}
 make_unique <- function(x) {
-  xts::make.time.unique(x$date_time,eps = 1)
+  xts::make.time.unique(x$date_time,eps = 10)
 }
 
 library(xts)
@@ -572,7 +586,7 @@ tbl_locs <- tbl_locs %>%
 ### Course Speed Filter
 
 This step is optional, but it is very common for Argos data to include obviously
-wrong locations (locations that are 100s of kilometers away from the study area).
+wrong locations (locations that are hundreds of kilometers away from the study area).
 Including such obviously wrong locations in the analysis can result in unexpected
 issues or problems fitting. For this reason, we recommend a course speed filter
 to remove these obviously wrong locations. A typical speed filter might use a
@@ -580,29 +594,47 @@ value of 2.5 m/s as a biologically reasonable value for pinnipeds. For this
 application, we will use 7.5 m/s and rely on the `argosfilter` package.
 
 The example code below follows a typical split-apply-combine approach using
-functions from the `dplyr`, `tidyr`, and `purrr` packages. To better 
-understand what each step is doing, we suggest you step through the process and
-examine the results at point.
+functions from the `dplyr`, `tidyr`, and `purrr` packages. This analysis can
+be run in series, however, the process lends itself nicely to parallel processing.
+The `parallel` package (included with the distribution of R) would be one option
+for taking advantage of multiple processors. However, we want to maintain the
+`purrr` and nested column tibble data structure. The `multidplyr` package is
+in development and available for install via the `devtools` package and source
+code hosted on GitHub.
+
+This is not intended to be a `multidplyr` tutorial, so some details are left 
+out. That said, many processes in analysis of animal movement are setup nicely
+for parallel processing. We encourage anyone who is doing movement analysis on
+datasets with a large number of animals to spend some time learning about the
+various parallel processing options within R. 
 
 ```{r}
+library(purrr)
+library(furrr)
 
-speed_filt <- function(x) {
-  argosfilter::sdafilter(
-    lat = x$latitude,
-    lon = x$longitude,
-    dtime = x$date_time,
-    lc = x$quality,
-    vmax = 7.5
-  )
-}
+future::plan(multiprocess)
 
 tbl_locs <- tbl_locs %>% 
-  dplyr::group_by(deployid) %>% tidyr::nest() %>% 
-  dplyr::mutate(filtered = purrr::map(data, speed_filt)) %>% 
+  dplyr::arrange(deployid, date_time) %>% 
+  dplyr::group_by(deployid) %>% 
+  tidyr::nest() 
+
+tbl_locs %>% dplyr::summarise(n = n())
+
+tbl_locs <- tbl_locs %>% 
+  dplyr::mutate(filtered = furrr::future_map(data, ~ argosfilter::sdafilter(
+    lat = .x$latitude,
+    lon = .x$longitude,
+    dtime = .x$date_time,
+    lc = .x$quality,
+    vmax = 7.5
+  ))) %>% 
   tidyr::unnest() %>% 
   dplyr::filter(filtered %in% c("not", "end_location")) %>% 
   dplyr::select(-filtered) %>% 
   dplyr::arrange(deployid,date_time)
+
+tbl_locs %>% dplyr::summarise(n = n())
 
 ```
 
@@ -616,13 +648,15 @@ is new and still in active development. However, the `sf` package is based on
 the more open _simple features_ standard for spatial data. For this reason, and
 others, many in the R community feel `sf` is the future of spatial data in R.
 
+In the previous section, our `leaflet` map relied on input of an `sf` object.
+
 The `crawl::crwMLE()` can accept either a _SpatialPointsDataFrame_ from the
 `sp` package or an _sf_ data.frame of _POINT_ geometry types. Here, we will
 focus on the `sf` package.
 
 ```{r}
 sf_locs <- sf::st_as_sf(tbl_locs, coords = c("longitude","latitude")) %>% 
-  sf::st_set_crs(.,4326)
+  sf::st_set_crs(4326)
 ```
 
 Earlier versions of `crawl` allowed users to pass geographic coordinates (e.g.
@@ -632,8 +666,10 @@ decimal degrees into meters --- the units for the provided error ellipses.
 Because of these issues, all data should be provided to the `crawl::crwMLE()`
 as projected coordinates in meter units. Which projection users choose is 
 dependent upon their study area. For these data, we will go with the _North Pole 
-LAEA Bering Sea_ projection. This projection is often abbreciated by the EPSG
-code of 3571.
+LAEA Bering Sea_ projection. This projection is often abbreciated by the epsg
+code of 3571. If you don't know the epsg code for the preferred projection in
+your study area, a the [spatial reference](http://spatialreference.org/)
+website provides a comprehensive catalog of projections and epsg codes.
 
 The `sf::transform()` function provides an easy method for transforming our
 coordinates. After, we can examine the geometry and confirm our coordinate
@@ -655,14 +691,16 @@ Since our _activity_ data represent hourly records, we need to create a
 `date_hour` field within `tbl_locs` as the basis for our join. While we are at
 it, we'll translate the simple feature geometry
 for our point coordinates into an `x` and `y` column (note the use of a local
-function `sfc_as_cols()` to facilitate this).
+function `sfc_as_cols()` to facilitate this). This addition of an `x` and `y`
+column is mostly a convenience function that may not be needed in future versions.
 
 ```{r}
 sfc_as_cols <- function(x, names = c("x","y")) {
   stopifnot(inherits(x,"sf") && inherits(sf::st_geometry(x),"sfc_POINT"))
-  ret <- do.call(rbind,sf::st_geometry(x))
+  ret <- sf::st_coordinates(x)
   ret <- tibble::as_tibble(ret)
   stopifnot(length(names) == ncol(ret))
+  x <- x[ , !names(x) %in% names]
   ret <- setNames(ret,names)
   dplyr::bind_cols(x,ret)
 }
@@ -716,23 +754,37 @@ tbl_locs_activity <- tbl_percent %>%
 
 ## Determining Your Model Parameters
 
+### Install Latest Version of `crawl`
+
+The most stable and reliable version of `crawl` is available on CRAN. However,
+new features and improvements are often available within the __development__
+version available through GitHub. To install the development version we will
+rely on the `devtools::install_github()` function.
+
+```{r, eval=FALSE}
+devtools::install_github('NMML/crawl',ref='devel')
+```
+
 ### Create a Nested Data Structure
 
 We now have two objects: `sf_locs` and `tbl_locs_activity`. The first step is
 to _nest_ each of our objects by `deployid` so we can take advantage of list 
 columns when fitting multiple deployments at once. We will group by `deployid` 
 and then call `tidyr::nest()`. For `sf_locs` we need to convert back into an 
-`sf` object after the group by and nesting.
+`sf` object after the group by and nesting. Note, we are also setting up the
+required cluster partitioning steps for the `multidplyr` package like we did
+with the speed filtering earlier.
 
 ```{r}
+future::plan(multisession)
 sf_locs <- sf_locs %>% 
   dplyr::group_by(deployid) %>% dplyr::arrange(date_time) %>% 
   tidyr::nest() %>% 
-  dplyr::mutate(data = purrr::map(data,sf::st_as_sf))
+  dplyr::mutate(data = furrr::future_map(data,sf::st_as_sf))
 
 tbl_locs_activity <- tbl_locs_activity %>% 
   dplyr::group_by(deployid) %>% dplyr::arrange(date_time) %>% 
-  tidyr::nest() 
+  tidyr::nest()
 ```
 
 This _nested_ data structure and the use of list-columns is a relatively
@@ -741,45 +793,33 @@ and, instead of making this a full tutoriala on `purrr::map()`,
 `tidyr::nest()`, etc. I suggest reading up on various tutorials available
 on the web and playing around with other examples.
 
-### Create model.matrix for Ellipse Errors
+### Create Ellipse Error Columns
 
 The data in this example are from recent Argos deployments and, thus, include
 error ellipse information determined from the Kalman filter processing that
 has been available since 2011. This ellipse information provides a 
 significant improvement to modeling animal movement because it provides
-specific information on the error associated with each location estimate. The
-`ellipse_matrix()` function translates the error ellipse information provided
-by Argos into a model matrix structure that `crawl::crwMLE()` can utilize. The
-`crawl::argosDiag2Cov()` function further transforms this information back
-into the original data frame structure which we can then bind back into
+specific information on the error associated with each location estimate.  The
+`crawl::argosDiag2Cov()` function returns 3 columns we can then bind back into
 our data.
 
 ```{r}
-ellipse_matrix <- function(x) {
-  if (inherits(x, "sf")) {
-    sf::st_geometry(x) <- NULL
-  }
-  ret <- model.matrix(
-    ~ error_semi_major_axis + error_semi_minor_axis +
-      error_ellipse_orientation,
-    model.frame(~ .,x,na.action = na.pass))[,-1]
-  ret
-}
-
 sf_locs <- sf_locs %>% 
-  dplyr::mutate(diag = purrr::map(data, ellipse_matrix),
-         diag = purrr::map(diag, ~ crawl::argosDiag2Cov(
-                          .x[,1], .x[,2], .x[,3])),
-         data = purrr::map2(data,diag,bind_cols)
-  ) %>% 
+  dplyr::mutate(
+    diag = purrr::map(data, ~ crawl::argosDiag2Cov(
+                      .x$error_semi_major_axis, 
+                      .x$error_semi_minor_axis, 
+                      .x$error_ellipse_orientation)),
+    data = purrr::map2(data,diag,bind_cols)) %>% 
   dplyr::select(-diag)
 
 tbl_locs_activity <- tbl_locs_activity %>% 
-  dplyr::mutate(diag = purrr::map(data, ellipse_matrix),
-         diag = purrr::map(diag, ~ crawl::argosDiag2Cov(
-                          .x[,1], .x[,2], .x[,3])),
-         data = purrr::map2(data,diag,bind_cols)
-  ) %>% 
+  dplyr::mutate(
+    diag = purrr::map(data, ~ crawl::argosDiag2Cov(
+                      .x$error_semi_major_axis, 
+                      .x$error_semi_minor_axis, 
+                      .x$error_ellipse_orientation)),
+    data = purrr::map2(data,diag,bind_cols)) %>% 
   dplyr::select(-diag)
 
 ```
@@ -794,63 +834,196 @@ observation with zero velocity. _a_ is the starting location for the model --
 the first known coordinate; and P is a 4x4 var-cov matrix that specifies 
 the error (in projected units) for the initial coordinates.
 
+> Note that this `init_params()` functiion can either extract the coordinate
+values from the `x` and `y` columns we created previously or from the simple
+features geometry.
+
 ```{r}
 init_params <- function(d) {
+  if (any(colnames(d) == "x") && any(colnames(d) == "y")) {
   ret <- list(a = c(d$x[1], 0,
                     d$y[1], 0),
               P = diag(c(10 ^ 2, 10 ^ 2,
                          10 ^ 2, 10 ^ 2)))
+  } else if (inherits(d,"sf")) {
+    ret <- list(a = c(sf::st_coordinates(d)[[1,1]], 0,
+                      sf::st_coordinates(d)[[1,2]], 0))
+  }
   ret
 } 
 ```
 
 In addition to specifying the initial state, we need to provide a vector 
-specifying which parameters will be fixed. Any values specified as _NA_ will be
-estimated by the model. This information is passed to
-`crawl::crwMLE()` as the functional parameter `fixpar`. For this example, 
-the first two values in the vector are set to 1 as we are providing the
-error structure with the ellipse information. The thrid value in the vector is
-the _sigma_ and this is almost always set to _NA_. The fourthe value is _beta_
-which is the autocorrelation parameter. This is also, typically, set to _NA_ as
-we want to estimate this. However, in some cases, the movement data will be
-more representative of Brownian motion and the model will be more likely to
-fit successfully if this is fixed to a value of _4_. If an activity parameter
-is provided, then a fifth value is inlcuded in `fixpar` and should be set to _0_.
+specifying which parameters will be fixed. Any values specified as _NA_ will be 
+estimated by the model. This information is passed to `crawl::crwMLE()` as the
+functional argument `fixPar`. The general order for `fixPar` is location error
+variance parameters (e.g. ellipse, location quality), followed by _sigma_ and
+_beta_ and, then, the _activity_ parameter. 
 
-> insert section discussing fixpar values for Argos location quality classes
+For this example, the first two values in the vector are set to 1 as we are 
+providing the error structure with the ellipse information. The thrid value in 
+the vector is _sigma_ and this is almost always set to _NA_. The fourth value is
+_beta_ which is the auto-correlation parameter. This is also, typically, set to
+_NA_ as we want to estimate this. However, for some limited/challenging
+datasets, you may need to fix this value in order to force a model fit. If an
+activity parameter is provided, then a fifth value is inlcuded in `fixPar` and
+should be set to _0_.
 
-It is also beneficial to provide some contraints for the model parameters you 
-would like estimated. There are two typical scenarios:
+#### Argos Location Quality Errors
 
-1. limiting the parameter range for various Argos location quality classes
-2. limiting the _beta_ parameter estimation to be bounded by -4 and 4.
+> It is important to note that if ellipse error information is available, then
+> this should be preferred over use of the location quality classes.
 
-In this example, we let the _sigma_ parameter ranged from -Inf to Inf while
-limiting _beta_ to range between -4 and 4.
+In cases where the ellipse error structure is not available, we need to rely on 
+the location quality classes provided by CLS/Argos for each location estimate. 
+While CLS/Argos do provide guidelines for error associated with location classes
+3, 2, and 1, there is no direct way to translate these error guidelines into
+standard error distributions. Additionally, these error values have been shown
+to generally underestimate the error associated with location estimates from
+marine species. Each user and each research project should decide on values that
+best fit their needs and their regions.
+
+```{r, eval=FALSE}
+order_lc <- function(x) {
+  x$quality = factor(x$quality, 
+                     levels = c("3","2","1","0","A","B"))
+  return(x)
+}
+
+sf_locs <- sf_locs %>% 
+  dplyr::mutate(data = furrr::future_map(data,order_lc))
+```
+
+There are two options for incorporating the location quality errors into `crawl`.
+
+1. Fix the variance parameters for the first three location quality classes
+2. Provide a prior distribution for each of the location quality classes
+
+The first option is to fix the variance parameters for the first three 
+location quality classes and then allow the model to estimate the 
+remaining values. We do this via the `fixPar` argument.
+
+```{r, eval=FALSE}
+## example code for specifying `fixPar` with fixed values for 3, 2, and 1
+sf_locs <- sf_locs %>% 
+  dplyr::mutate(
+    fixpar = rep(
+      list(c(log(250), log(500), log(1500), NA, NA, NA, NA, NA)),
+      nrow(.)
+    )
+  )
+```
+
+The first 6 elements in the vector provided to the `fixPar` argument represent the
+6 location quality classes (ordered from 3 to A). In the ellipse version of this
+approach, the first two elements represented in the ellipse error for `x` and `y`.
+Here we will presume the variance for our error is the same in both `x` and `y`.
+Note the values are provided as log-transformed.
+
+It is also important that the location quality column in the data be set as a 
+factor variable and that the levels be ordered correctly.
+
+```{r, eval=FALSE}
+order_lc <- function(x) {
+  x$quality = factor(x$quality, 
+                     levels = c("3","2","1","0","A","B"))
+  return(x)
+}
+
+sf_locs <- sf_locs %>% 
+  dplyr::mutate(data = purrr::map(data,order_lc))
+```
+
+The second option is to provide a prior distribution for each of the location
+quality classes. The `crawl::crwMLE()` function accepts a function for the 
+'prior' argument. In this example, we provide a normal distribution of the
+log-transformed error. The standard error of 0.2
+
+```{r, eval=FALSE}
+prior <-  function(p) { 
+    dnorm(p[1], log(250), 0.2 , log = TRUE) +
+      dnorm(p[2], log(500), 0.2 , log = TRUE) +
+      dnorm(p[3], log(1500), 0.2, log = TRUE) +
+      dnorm(p[4], log(2500), 0.4 , log = TRUE) +
+      dnorm(p[5], log(2500), 0.4 , log = TRUE) +
+      dnorm(p[6], log(2500), 0.4 , log = TRUE) +
+      # skip p[7] as we won't provide a prior for sigma
+      dnorm(p[8], -4, 2, log = TRUE)
+}
+
+```
+
+```{r,fig.cap = '(ref:histogram-qual-3-prior)'}
+qual_3 <- data.frame( x = exp(rnorm(200,log(250),0.2)))
+ggplot(data = qual_3, aes(x=x)) + geom_histogram(binwidth = 20) +
+  ggtitle("Prior Distribution for Location Quality 3")
+```
+
+(ref:histogram-qual-3-prior) A histogram representing a prior distribution (normal) for location quality class 3 with a mean of log(250) and standard error of 0.2. 
+
+```{r,fig.cap = '(ref:histogram-qual-1-prior)'}
+qual_2 <- data.frame( x = exp(rnorm(200,log(1500),0.2)))
+ggplot(data = qual_2, aes(x=x)) + geom_histogram(binwidth = 20) +
+  ggtitle("Prior Distribution for Location Quality 1")
+```
+
+(ref:histogram-qual-2-prior) A histogram representing a prior distribution (normal) for location quality class 1 with a mean of log(1500) and standard error of 0.2. 
+
+```{r,fig.cap = '(ref:histogram-qual-B-prior)'}
+qual_B <- data.frame( x = exp(rnorm(200,log(2500),0.4)))
+ggplot(data = qual_B, aes(x=x)) + geom_histogram(binwidth = 20) +
+  ggtitle("Prior Distribution for Location Quality B")
+```
+
+(ref:histogram-qual-B-prior) A histogram representing a prior distribution (normal) for location quality class B with a mean of log(2500) and standard error of 0.4.
+
+In addition to prior distributions for the location quality classes, we can
+also provide a prior distribution for the _beta_ parameter. We suggest a normal
+distribution with a mean of -4 and a standard deviation of 2. This encourages the
+model to fit a smoother track unless the data warrant a rougher, more Brownian,
+path.
+
+```{r,fig.cap = '(ref:histogram-beta-prior)'}
+beta <- data.frame( x = exp(rnorm(200,-4,2)))
+ggplot(data = beta, aes(x=x)) + geom_histogram(binwidth = 20) +
+  ggtitle("Prior Distribution for Beta Parameter")
+```
+
+(ref:histogram-beta-prior) A histogram representing a prior distribution (normal) for the beta parameter with a mean of -4 and standard error of 2.
+
+
+#### Prior Distributions vs Fixed Values and Constraints
+
+Previous documentation and examples that described a setup for 'crawl' often
+suggested users implement a mixed approach by providing both fixed values and
+constraints to optimize the fit and increase the model's ability to converge
+with limited/challenging data. We now suggest users rely on prior distributions
+to achieve a similar intent but provide the model more flexibility. Users should
+feel free to explore various distributions and approaches for describing the
+priors (e.g. laplace, log-normal) based on their data and research questions.
+
+Those documents also often suggested fixing the _beta_ parameter to 4 as the
+best approach to encourage challenging datasets to fit. This, essentially,
+forced the fit toward Brownian movement. We now suggest users rely on the prior
+distribution centered on -4 (smoother fit) and, if needed, fix the _beta_
+parameter to -4. Only fix the parameter to 4 as a final resort.
+
 
 ```{r}
 
 sf_locs <- sf_locs %>% 
-  dplyr::mutate(init = purrr::map(data,init_params),
+  dplyr::mutate(
                 fixpar = rep(
                   list(c(1,1,NA,NA)),
                        nrow(.)
-                  ),
-                constr = rep(list(
-                  list(lower = c(-Inf, -4), upper = (c(Inf, 4)))),
-                  nrow(.))
-                
+                  )
   )
 
 tbl_locs_activity <- tbl_locs_activity %>% 
-  dplyr::mutate(init = purrr::map(data,init_params),
-                fixpar = rep(
+  dplyr::mutate(fixpar = rep(
                   list(c(1,1,NA,NA,0)),
                        nrow(.)
-                  ),
-                constr = rep(list(
-                  list(lower = c(-Inf, -4), upper = (c(Inf, 4)))),
-                  nrow(.))
+                  )
   )
 
 ```
@@ -869,14 +1042,8 @@ that will work better with our _tidy_ approach. It also allows us to make
 sequencial calls to `crawl::crwMLE()` that adjust parameters in cases where the
 fit fails.
 
-There are two ways in which we can adjust the parameters:
-
-1. provide a prior (or, in this case, a series of priors) in the form of 
-a function
-2. fix the _beta_ parameter at 4 to specify Brownian motion
-
 A few other aspects about our wrapper function to note. We pass our observed
-data in as `d` and then the parameters `init`, `fixpar`, and `constr`.
+data in as `d` and then the parameters `fixpar`, and `constr`.
 Additionally, we can specify `tryBrownian = FALSE` if we don't want the model
 to fit with Brownian motion as the final try.
 
@@ -890,74 +1057,39 @@ column to determine whether activity parameter should be included in the
 model fit.
 
 ```{r}
-fit_crawl <- function(d, init, fixpar, constr, 
-                      tryBrownian = TRUE) {
+fit_crawl <- function(d, fixpar) {
+
+## if relying on a prior for location quality
+## replace this with the function described previously
+prior <- function(p) {
+  dnorm(p[2], -4, 2, log = TRUE)
+} 
   
-  priors <- list(
-    NULL,
-    ln_prior = function(par) { dnorm(par[2], 4, 4, log = TRUE) },
-    lap_prior = function(par) { -abs(par[2] - 4) / 5 },
-    reg_prior = function(par) { dt(par[2] - 3, df = 1, log = TRUE) }
-  )
-  #cycle through 4 different prior values. the first being no prior/NULL
-  for (prior in priors) {
-    fit <- crawl::crwMLE(
-      mov.model =  ~ 1,
-      if (any(colnames(d) == "activity")) {
+fit <- crawl::crwMLE(
+  mov.model =  ~ 1,
+  err.model = list(
+      x =  ~ ln.sd.x - 1,
+      y =  ~ ln.sd.y - 1,
+      rho =  ~ error.corr
+    ),
+  if (any(colnames(d) == "activity")) {
         activity <- ~ I(activity)
       } else {activity <- NULL},
-      err.model = list(
-        x =  ~ ln.sd.x - 1,
-        y =  ~ ln.sd.y - 1,
-        rho =  ~ error.corr
-      ),
-      data = d,
-      Time.name = "date_time",
-      initial.state = init,
-      fixPar = fixpar,
-      prior = prior,
-      constr = constr,
-      attempts = 1,
-      control = list(
-        trace = 0
-      ),
-      initialSANN = list(
-        maxit = 1500,
-        trace = 0
-      )
-    )
-    if (!any(is.nan(fit$se))) {
-      return(fit)
-    }
-  }
-  
-  # at this point, the most likely reason for failing to fit is b/c the mov't is
-  # more Brownian in nature. Here, we fix beta at 4 which specifies Brownian
-  if (any(is.nan(fit$se)) && tryBrownian) {
-    fixPar = c(1, 1, NA, 4)
-    
-    fit <- crawl::crwMLE(
-      mov.model =  ~ 1,
-      err.model = list(
-        x =  ~ ln.sd.x - 1,
-        y =  ~ ln.sd.y - 1,
-        rho =  ~ error.corr
-      ),
-      data = d,
-      Time.name = "date_time",
-      initial.state = init,
-      fixPar = fixPar,
-      attempts = 1,
-      control = list(
-        trace = 0
-      ),
-      initialSANN = list(
-        maxit = 500,
-        trace = 0
-      )
-    )
-  }
-  fit
+  fixPar = fixpar,
+  data = d,
+  method = "Nelder-Mead",
+  Time.name = "date_time",
+  prior = prior,
+  attempts = 8,
+  control = list(
+    trace = 0
+  ),
+  initialSANN = list(
+    maxit = 1500,
+    trace = 0
+  )
+)
+fit
 }
 ```
 
@@ -967,14 +1099,10 @@ This has the significant benefit of keeping all our data, model specifications,
 model fits, parameter estimates --- and, next, our model predictions --- nicely
 organized. 
 
-> this section relies on the `crawl::tidy_crwFit()` function which is only 
-> available with the latest `devel` version of `crawl` from GitHub.
-
 ```{r}
 library(pander)
 tbl_locs_fit <- sf_locs %>% 
-  dplyr::mutate(fit = purrr::pmap(list(d = data,init = init,
-                                fixpar = fixpar,constr = constr),
+  dplyr::mutate(fit = furrr::future_pmap(list(d = data,fixpar = fixpar),
                            fit_crawl),
                 params = map(fit, crawl::tidy_crwFit))
 ```
@@ -989,16 +1117,16 @@ tbl_locs_fit$params %>%
   walk(pander::pander,caption = "crwMLE fit parameters")
 ```
 
+Our second set of tables are for our two seal deployments and the model has 
+been fit with inclusion of _activity_ data.
+
 ```{r}
 tbl_locs_activity_fit <- tbl_locs_activity %>%
-  dplyr::mutate(fit = purrr::pmap(list(d = data,init = init,
-                                fixpar = fixpar,constr = constr),
+  dplyr::mutate(fit = furrr::future_pmap(list(d = data,fixpar = fixpar),
                            fit_crawl),
                 params = map(fit, crawl::tidy_crwFit))
 ```
 
-Our second set of tables are for our two seal deployments and the model has 
-been fit with inclusion of _activity_ data.
 
 ```{r,results = 'asis'}
 panderOptions('knitr.auto.asis', FALSE)
@@ -1029,12 +1157,10 @@ string should correspond to the `by` argument of the `seq.POSIXt` function
 (e.g. '1 hour', '30 mins').
 
 ```{r,crwpredict-plots}
-tbl_locs_activity_fit <- tbl_locs_activity_fit %>% 
-  dplyr::mutate(predict = purrr::map(fit,
+tbl_locs_fit <- tbl_locs_fit %>% 
+  dplyr::mutate(predict = furrr::future_map(fit,
                                      crawl::crwPredict,
                                      predTime = '1 hour')) 
-
-tbl_locs_activity_fit$predict %>% purrr::walk(crawl::crwPredictPlot)
 ```
 
 We still need to perform some additional processing of the prediction object
@@ -1043,163 +1169,100 @@ create a custom function `as.sf()` which will convert our `crwPredict` object
 into an `sf` object of either "POINT" or "MULTILINESTRING"
 
 ```{r}
-as.sf <- function(p,id,epsg,type,loctype) {
-  p <- 
-    sf::st_as_sf(p, coords = c("mu.x","mu.y")) %>% 
-    dplyr::mutate(TimeNum = lubridate::as_datetime(TimeNum),
-                  deployid = id) %>% 
-    dplyr::rename(pred_dt = TimeNum) %>% 
-    filter(loctype %in% loctype) %>% 
-    sf::st_set_crs(.,epsg)
-  if (type == "POINT") return(p)
-  if (type == "LINE") {
-    p <- p %>% dplyr::arrange(pred_dt) %>%  
-      sf::st_geometry() %>% 
-      st_cast("MULTIPOINT",ids = as.integer(as.factor(p$deployid))) %>% 
-      st_cast("MULTILINESTRING") %>% 
-      st_sf(deployid = unique(p$deployid))
-    return(p)
-  }
-}
-
-tbl_locs_activity_fit <- tbl_locs_activity_fit %>% 
-  dplyr::mutate(sf_points = purrr::map2(predict, deployid,
-                                       as.sf,
-                                       epsg = 3571, 
-                                       type = "POINT",
-                                       loctype = "p"),
-                sf_line = purrr::map2(predict, deployid,
-                                     as.sf,
-                                     epsg = 3571,
-                                     type = "LINE",
-                                     loctype = "p"))
+tbl_locs_fit <- tbl_locs_fit %>% 
+  dplyr::mutate(sf_points = purrr::map(predict,
+                                       crawl::crw_as_sf,
+                                       ftype = "POINT",
+                                       locType = "p"),
+                sf_line = purrr::map(predict,
+                                     crawl::crw_as_sf,
+                                     ftype = "LINESTRING",
+                                     locType = "p")
+                )
 ```
 
 ```{r}
-sf_pred_lines <- tbl_locs_activity_fit$sf_line %>% 
-  lift(rbind)() %>% 
-  sf::st_set_crs(3571) 
-```
+sf_pred_lines <- do.call(rbind,tbl_locs_fit$sf_line) %>% 
+  mutate(id = tbl_locs_fit$deployid) %>% 
+  rename(deployid = id)
 
-(ref:leaflet-pred-lines-fig-cap) An interactive map of predicted tracks from two harbor seals in the Aleutian Islands. 
-
-```{r, leaflet-pred-lines, out.width = '100%', fig.cap = '(ref:leaflet-pred-lines-fig-cap)'}
-n <- length(unique(sf_pred_lines$deployid))
-pal <- colorFactor(ggthemes::ptol_pal()(n), 
-                   domain = sf_pred_lines$deployid)
-
-m <- sf_pred_lines %>% 
-  sf::st_transform(4326) %>% 
-  leaflet() %>% 
-  addProviderTiles("Esri.OceanBasemap") %>% 
-  addPolylines(weight = 2, color = ~pal(deployid)) %>% 
-  addLegend(pal = pal,values = ~deployid,labels = ~deployid) %>% 
-  suspendScroll()
-
-m
-```
-
-## Adjust Path Around Land
-
-The `crawl` package now includes a `fix_path()` function which will adjust any
-predicted path around land features using a least-cost function. For this
-function, you'll need a raster representation of your land (or other feature
-to avoid). In this case, we are pulling from the nPacMaps R packages (available
-on Github at https://github.com/jmlondon/nPacMaps) which includes a basemap
-for the Bering Sea and Aleutian Islands.
-
-Additional parameters of importance are an expansion amount (`poly_expand`)
-which expands the study area beyond the range of our predicted track. We also
-need to set the raster resolution (`res`). In this case, our area of interest
-is relatively small and we need a lower resolution value (200 meters) in order 
-to capture all of the land detail. Such a high resolution raster is NOT advised
-for larger scale studies. The remainder of the code example below simply
-creates the raster and sets up the transition layer needed to calculate the
-least-cost path.
-
-```{r}
-bering_base <- nPacMaps::bering(fortify = FALSE, simplify = FALSE)
-bering_base@polygons <- lapply(bering_base@polygons,  
-                               maptools::checkPolygonsHoles)
-
-poly_expand <- 50000
-res <- 200
-tmpland <- raster::rasterTmpFile()
-r <- raster::raster(
-  ext = raster::extend(raster::extent(matrix(st_bbox(sf_pred_lines), 
-                                             2)), 
-                                      poly_expand),
-                       resolution = res,
-                       crs = sp::CRS("+init=epsg:3571")
-)
-land <- raster::rasterize(bering_base,
-                          r,
-                          getCover = TRUE,
-                          background = 0,
-                          filename = tmpland)
-land <- land / 100
-land[land < 1] <- 0
-water <- raster::asFactor(1 - land)
-trans <- gdistance::transition(water, "areas", directions = 16)[[1]]
-```
-
-The `crawl::fix_path` function will return a 2-column matrix of `mu.x` and 
-`mu.y` values. This matrix is of the same length as the `crwPredict` object and
-we need to replace the original coordinates with our _fixed_ values. To make
-this easier within our functional approach, we create a wrapper function,
-`.fix_path` that calls `crawl::fix_path` and then edits the original data. The
-last step is to create a combined `sf` object that has each of our _fixed_ lines
-and we can use this for any plotting.
-
-```{r}
-.fix_path <- function(prd, res_raster, trans) {
-  m <- crawl::fix_path(prd, res_raster = res_raster, trans = trans)
-  prd$mu.x <- m[,"mu.x"]
-  prd$mu.y <- m[,"mu.y"]
-  prd
-}
-
-tbl_locs_activity_fit <- tbl_locs_activity_fit %>% 
-  dplyr::mutate(sf_points_fix = purrr::map(predict,
-                                           .fix_path,
-                                           res_raster = land,
-                                           trans = trans))
-
-tbl_locs_activity_fit <- tbl_locs_activity_fit %>%  
-  dplyr::mutate(sf_lines_fix = purrr::map2(sf_points_fix,deployid,
-                                           as.sf,
-                                           epsg = 3571,
-                                           type = "LINE",
-                                           loctype = "p"))
-
-sf_pred_lines_fix <- tbl_locs_activity_fit$sf_lines_fix %>% 
-  lift(rbind)() %>% sf::st_set_crs(3571) 
+sf_pred_points <- tbl_locs_fit %>% tidyr::unnest(sf_points) %>% 
+  mutate(geometry = sf::st_sfc(geometry)) %>% 
+  sf::st_as_sf() %>% sf::st_set_crs(3571)
 
 ```
 
-(ref:leaflet-pred-lines-fix-fig-cap) An interactive map of predicted tracks from two harbor seals in the Aleutian Islands. The paths have been _fixed_ to re-route around land features.
+(ref:map-pred-lines-fig-cap) An interactive map of predicted tracks from two harbor seals in the Aleutian Islands.
 
-```{r, leaflet-pred-lines-fix, out.width = '100%', fig.cap = '(ref:leaflet-pred-lines-fix-fig-cap)'}
-n <- length(unique(sf_pred_lines_fix$deployid))
-pal <- colorFactor(ggthemes::ptol_pal()(n), 
-                   domain = sf_pred_lines_fix$deployid)
+```{r, map-pred-lines, fig.cap = '(ref:map-pred-lines-fig-cap)'}
 
-m <- sf_pred_lines_fix %>% 
-  sf::st_transform(4326) %>% 
-  leaflet() %>% 
-  addProviderTiles("Esri.OceanBasemap") %>% 
-  addPolylines(weight = 2, color = ~pal(deployid)) %>% 
-  addLegend(pal = pal,values = ~deployid,labels = ~deployid) %>% 
-  suspendScroll()
+esri_ocean <- paste0('https://services.arcgisonline.com/arcgis/rest/services/',
+                     'Ocean/World_Ocean_Base/MapServer/tile/${z}/${y}/${x}.jpeg')
 
-m
+ggplot() + 
+  annotation_map_tile(type = esri_ocean,zoomin = 1,progress = "none") +
+  layer_spatial(sf_pred_lines, size = 0.75,aes(color = deployid)) +
+  scale_x_continuous(expand = expand_scale(mult = c(.6, .6))) +
+  scale_y_continuous(expand = expand_scale(mult = c(0.35, 0.35))) +
+  scale_color_brewer(palette = "Dark2") +
+  theme(legend.position = "none") +
+  ggtitle("Predicted Location Paths", 
+          subtitle = "harbor seals (n=2), Aleutian Islands, Alaska, USA")
+
 ```
+
+
 
 ## Simulating Tracks from the Posterior
 
 ```{r}
 
+.get_sim_tracks <- function(crw_fit,iter) {
+  
+  simObj <- crw_fit %>% crawl::crwSimulator(predTime = '1 hour')
+  
+  sim_tracks = list()
+  for (i in 1:iter) {
+    sim_tracks[[i]] <- crawl::crwPostIS(simObj, fullPost = FALSE)
+  }
+  return(sim_tracks)
+}
+
+tbl_locs_fit <- tbl_locs_fit %>% 
+  dplyr::mutate(sim_tracks = purrr::map(fit,
+                                       .get_sim_tracks,
+                                       iter = 5))
+
+tbl_locs_fit <- tbl_locs_fit %>% 
+  dplyr::mutate(sim_lines = crawl::crw_as_sf(.$sim_tracks, ftype = "MULTILINESTRING",
+                                             locType = "p"))
 
 ```
 
 ## Visualization of Results
+
+(ref:map-sim-lines-fig-cap) An interactive map of simulated tracks from two harbor seals in the Aleutian Islands.
+
+```{r, map-sim-lines, fig.cap = '(ref:map-sim-lines-fig-cap)', fig.width = 6}
+
+sf_sim_lines <- do.call(rbind,tbl_locs_fit$sim_lines) %>% 
+  mutate(id = tbl_locs_fit$deployid) %>% 
+  rename(deployid = id)
+
+esri_ocean <- paste0('https://services.arcgisonline.com/arcgis/rest/services/',
+                     'Ocean/World_Ocean_Base/MapServer/tile/${z}/${y}/${x}.jpeg')
+
+ggplot() + 
+  annotation_map_tile(type = esri_ocean,zoomin = 1,progress = "none") +
+  layer_spatial(sf_sim_lines, size = 0.25, alpha = 0.1, aes(color = deployid)) +
+  facet_grid(rows = vars(deployid)) +
+  scale_x_continuous(expand = expand_scale(mult = c(.6, .6))) +
+  scale_y_continuous(expand = expand_scale(mult = c(0.35, 0.35))) +
+  scale_color_brewer(palette = "Dark2") +
+  theme(legend.position = "none") +
+  ggtitle("Simulated Location Paths", 
+          subtitle = "harbor seals (n=2), Aleutian Islands, Alaska, USA")
+
+```
+
+
